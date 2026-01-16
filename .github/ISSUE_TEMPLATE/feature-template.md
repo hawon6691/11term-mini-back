@@ -1,19 +1,17 @@
 ---
-name: Bug Report Template
-about: 버그 리포트 이슈 템플릿
-title: ""
-labels: "🐞 BugFix"
-assignees: ""
+name: Feature Template
+about: 기능 추가 이슈 템플릿
+title: ''
+labels: '✨ feature'
+assignees: ''
 ---
 
-## 🐞 버그 설명
+## ✨ 구현할 기능
 
-- 어떤 버그인지 간결하게 설명해주세요
+- 추가하려는 기능에 대해 간결하게 설명해주세요
 
-## 🔎 발생 이유
+## 📝 작업 상세 내용
 
-- (가능하면) Given-When-Then 형식으로 서술해주세요
-
-## 🤔 기대한 동작
-
-- 예상했던 정상적인 결과가 어떤 것이었는지 설명해주세요
+- [ ] TODO
+- [ ] TODO
+- [ ] TODO
