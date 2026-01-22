@@ -6,21 +6,31 @@ class UserService {
   }
 
   async findUserById(id) {
-    const user = await this.userRepository.findUserById(id);
-
-    return user;
+    return await this.userRepository.findUserById(id);
   }
 
   async findUserByEmail(email) {
-    const user = await this.userRepository.findUserByEmail(email);
-
-    return user;
+    return await this.userRepository.findUserByEmail(email);
   }
 
   async findUserByNickname(nickname) {
-    const user = await this.userRepository.findUserByEmail(nickname);
+    return await this.userRepository.findUserByNickname(nickname);
+  }
 
-    return user;
+  async signUp(userInfo) {
+    return await this.userRepository.create(userInfo);
+  }
+
+  async saveRefreshToken(userId, token) {
+    return await this.userRepository.saveRefreshToken(userId, token);
+  }
+
+  async removeRefreshToken(token) {
+    return await this.userRepository.removeRefreshToken(token);
+  }
+
+  async findRefreshToken(id) {
+    return await this.userRepository.findRefreshToken(id);
   }
 }
 

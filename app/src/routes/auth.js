@@ -6,15 +6,15 @@ const validate = require("../middleware/validate");
 
 const AuthService = require("./../auth/auth.service");
 const AuthController = require("./../auth/auth.controller");
+const UserService = require("./../users/user.service");
 const UserRepository = require("./../users/user.repository");
 
 const authGuard = require("./../auth/guard/auth.guard");
 
 const router = express.Router();
 
-const userRepository = new UserRepository();
-const authService = new AuthService(userRepository);
-const authController = new AuthController(authService);
+const userService = new UserService(new UserRepository());
+const authController = new AuthController(new AuthService(userService));
 
 router.post("/signup", signupValidator, validate, authController.signup);
 router.post("/login", authController.login);

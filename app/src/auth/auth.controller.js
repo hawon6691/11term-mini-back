@@ -33,7 +33,7 @@ class AuthController {
         if (err) return next(err);
 
         if (!user) {
-          throw new CustomError("존재하지 않는 사용자입니다.", 401);
+          throw new CustomError("이메일 또는 비밀번호가 올바르지 않습니다.", 401);
         }
 
         const accessToken = await this.authService.generateToken(user, "access");
