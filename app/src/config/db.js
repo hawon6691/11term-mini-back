@@ -10,4 +10,23 @@ const db = mysql.createPool({
   timezone: "+00:00",
 });
 
-module.exports = db;
+const execute = async (query, params = []) => {
+  try {
+    const [rows] = await db.query(query, params);
+
+    console.log("----------SQL----------");
+    console.log("query : ", query);
+    console.log("params : ", params);
+
+    return rows;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
+};
+
+db.on("connection", () => {
+  console.log("DB 연결 성공");
+});
+
+module.exports = execute;
