@@ -5,11 +5,22 @@ class UserService {
     this.userRepository = userRepository;
   }
 
-  // 테스트
-  async getUsers() {
-    const users = await this.userRepository.getUsers();
+  async findUserById(id) {
+    const user = await this.userRepository.findUserById(id);
 
-    return users;
+    return user;
+  }
+
+  async findUserByEmail(email) {
+    const user = await this.userRepository.findUserByEmail(email);
+
+    return user;
+  }
+
+  async findUserByNickname(nickname) {
+    const user = await this.userRepository.findUserByEmail(nickname);
+
+    return user;
   }
 }
 

@@ -11,6 +11,4 @@ const userRepository = new UserRepository();
 const userService = new UserService(userRepository);
 const userController = new UserController(userService);
 
-router.get("/", userController.getUsers);
-
 module.exports = router;
