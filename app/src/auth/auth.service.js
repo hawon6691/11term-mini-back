@@ -33,6 +33,7 @@ class AuthService {
   async generateToken(user, type) {
     const payload = {
       id: user.id,
+      nickname: user.nickname,
     };
 
     const jwtOption = {
