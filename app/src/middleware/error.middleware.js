@@ -1,6 +1,6 @@
-module.exports = (err, req, res, next) => {
-  console.error("error : ", err);
+"use strict";
 
+module.exports = (err, req, res, next) => {
   const status = err.statusCode || 500;
   const message = err.isOperational ? err.message : "서버 에러";
 

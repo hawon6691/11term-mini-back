@@ -2,7 +2,7 @@
 
 const mysql = require("mysql2/promise");
 
-const db = mysql.createPool({
+const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -12,7 +12,7 @@ const db = mysql.createPool({
 
 const execute = async (query, params = []) => {
   try {
-    const [rows] = await db.query(query, params);
+    const [rows] = await pool.query(query, params);
 
     console.log("----------SQL----------");
     console.log("query : ", query);
@@ -25,8 +25,8 @@ const execute = async (query, params = []) => {
   }
 };
 
-db.on("connection", () => {
+pool.on("connection", () => {
   console.log("DB 연결 성공");
 });
 
-module.exports = execute;
+module.exports = { pool, execute };
