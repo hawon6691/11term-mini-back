@@ -1,3 +1,5 @@
+"use strict";
+
 const passport = require("passport");
 
 const authGuard = () => {
@@ -5,7 +7,7 @@ const authGuard = () => {
     passport.authenticate("jwt", { session: true }, async (err, user, info) => {
       if (err) return next(err);
 
-      if (!user) return res.status(401).json({ message: info?.message || "Unauthorized" });
+      if (!user) return res.status(401).json({ message: "로그인이 필요합니다." });
 
       req.user = user;
 

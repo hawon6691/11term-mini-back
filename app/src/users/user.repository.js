@@ -1,8 +1,7 @@
 "use strict";
 
-const CustomError = require("../utils/customError");
 const camelcaseKeys = require("camelcase-keys").default;
-const execute = require("./../config/db");
+const { execute } = require("./../config/db");
 
 class UserRepository {
   async findUserById(id) {
