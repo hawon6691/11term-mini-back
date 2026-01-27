@@ -1,5 +1,6 @@
 "use strict";
 
+const camelcaseKeys = require("camelcase-keys").default;
 const mysql = require("mysql2/promise");
 
 const pool = mysql.createPool({
@@ -18,7 +19,9 @@ const execute = async (query, params = []) => {
     console.log("query : ", query);
     console.log("params : ", params);
 
-    return rows;
+    const result = camelcaseKeys(rows, { deep: true });
+
+    return result;
   } catch (error) {
     console.error(error);
     throw error;

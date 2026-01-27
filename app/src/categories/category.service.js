@@ -28,6 +28,12 @@ class CategoryService {
 
     return result.filter((category) => category);
   }
+
+  async findCategoryById(id) {
+    const result = await this.categoryRepository.findCategoryById(id);
+
+    return result;
+  }
 }
 
 module.exports = CategoryService;
