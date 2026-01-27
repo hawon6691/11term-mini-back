@@ -33,7 +33,7 @@ class ProductService {
           throw new CustomError("상품 이미지 저장 실패");
       }
 
-      const tags = [...new Set(this.splitTag(productData.tags))];
+      const tags = [...new Set(this.#splitTag(productData.tags))];
 
       if (tags.length > 0) {
         const createdTagsId = await this.tagService.createOrFindTags(tags, connection);
@@ -53,7 +53,7 @@ class ProductService {
     });
   }
 
-  splitTag(strTag) {
+  #splitTag(strTag) {
     if (!strTag) return [];
 
     return strTag

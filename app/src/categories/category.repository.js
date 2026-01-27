@@ -4,7 +4,7 @@ const { execute } = require("./../config/db");
 const camelcaseKeys = require("camelcase-keys").default;
 
 class CategoryRepository {
-  async findCategories() {
+  async findAllCategories() {
     const query = "SELECT * FROM categories";
 
     const rows = await execute(query);
