@@ -72,7 +72,9 @@ class ProductService {
   async findProductById(productId) {
     const rawProduct = await this.productRepository.findProductById(productId);
 
-    if (!rawProduct) return null;
+    if (!rawProduct) {
+      throw new CustomError("존재하지 않은 상품입니다.", 404);
+    }
 
     const { categoryId, ...product } = rawProduct;
 

@@ -48,10 +48,6 @@ class ProductController {
 
       const productData = await this.productService.findProductById(productId);
 
-      if (!productData) {
-        return res.status(204).json({ message: "존재하지 않는 상품입니다." });
-      }
-
       res.status(200).json({ data: productData });
     } catch (error) {
       console.error(error);
