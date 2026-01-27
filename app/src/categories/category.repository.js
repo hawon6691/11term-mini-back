@@ -1,7 +1,6 @@
 "use strict";
 
 const { execute } = require("./../config/db");
-const camelcaseKeys = require("camelcase-keys").default;
 
 class CategoryRepository {
   async findAllCategories() {
@@ -9,9 +8,7 @@ class CategoryRepository {
 
     const rows = await execute(query);
 
-    const result = camelcaseKeys(rows, { deep: true });
-
-    return result || null;
+    return rows || null;
   }
 
   async findCategoryById(id) {

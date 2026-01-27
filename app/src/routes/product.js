@@ -14,6 +14,9 @@ const ProductRepository = require("./../products/product.repository");
 const TagService = require("./../tags/tag.service");
 const TagRepository = require("./../tags/tag.repository");
 
+const CategoryService = require("./../categories/category.service");
+const CategoryRepository = require("./../categories/category.repository");
+
 const ProductTagService = require("./../productTags/productTag.service");
 const ProductTagRepository = require("./../productTags/productTag.repoitory");
 
@@ -25,8 +28,16 @@ const tagService = new TagService(tagRepository);
 const productTagRepository = new ProductTagRepository();
 const productTagService = new ProductTagService(productTagRepository);
 
+const categoryRepository = new CategoryRepository();
+const categoryService = new CategoryService(categoryRepository);
+
 const productRepository = new ProductRepository();
-const productService = new ProductService(productRepository, tagService, productTagService);
+const productService = new ProductService(
+  productRepository,
+  tagService,
+  productTagService,
+  categoryService
+);
 const productController = new ProductController(productService);
 
 router.post(
@@ -37,5 +48,8 @@ router.post(
   validate,
   productController.create
 );
+
+router.get("/", productController.findProducts);
+router.get("/:id", productController.findProductById);
 
 module.exports = router;

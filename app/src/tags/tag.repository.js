@@ -13,18 +13,18 @@ class TagRepository {
     return rows || null;
   }
 
-  async findTagById(id) {
-    const query = "SELECT * from tags WHERE id = ?;";
+  async findTagsByIds(tags) {
+    const query = "SELECT * from tags WHERE id IN (?);";
 
-    const [rows] = await execute(query, [id]);
-    return rows || null;
+    const rows = await execute(query, [tags]);
+    return rows || [];
   }
 
-  async findTagByNames(tags, connection) {
+  async findTagsByNames(tags, connection) {
     const query = "SELECT * from tags WHERE name IN (?);";
 
     const [rows] = await connection.query(query, [tags]);
-    return rows || null;
+    return rows || [];
   }
 }
 

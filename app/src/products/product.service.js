@@ -5,10 +5,11 @@ const CustomError = require("../utils/customError");
 const buildImagePath = require("../utils/file.util");
 
 class ProductService {
-  constructor(productRepository, tagService, productTagService) {
+  constructor(productRepository, tagService, productTagService, categoryService) {
     this.productRepository = productRepository;
     this.tagService = tagService;
     this.productTagService = productTagService;
+    this.categoryService = categoryService;
   }
 
   async create({ files, ...productData }) {
@@ -60,6 +61,54 @@ class ProductService {
       .trim()
       .split(" ")
       .filter((tag) => tag);
+  }
+
+  async findProducts() {
+    const products = await this.productRepository.findProducts();
+
+    return products;
+  }
+
+  async findProductById(productId) {
+    const rawProduct = await this.productRepository.findProductById(productId);
+
+    if (!rawProduct) {
+      throw new CustomError("존재하지 않은 상품입니다.", 404);
+    }
+
+    const { categoryId, ...product } = rawProduct;
+
+    const [rawImages, rawCategory, rawProductTags] = await Promise.all([
+      this.productRepository.findProductImages(productId),
+      this.categoryService.findCategoryById(categoryId),
+      this.productTagService.findProductTags(productId),
+    ]);
+
+    const tagIds = rawProductTags.map((tag) => tag.tagId);
+
+    const tags = tagIds.length > 0 ? await this.tagService.findTagsByIds(tagIds) : [];
+
+    const { parentId, ...categoryData } = rawCategory;
+
+    const category = {
+      category1: categoryData,
+    };
+
+    if (parentId) {
+      const rawParentCategory = await this.categoryService.findCategoryById(parentId);
+
+      const { parentId: _, ...parentCategory } = rawParentCategory;
+
+      category.category1 = parentCategory;
+      category.category2 = categoryData;
+    }
+
+    return {
+      ...product,
+      images: rawImages.map((image) => image.imageUrl),
+      tags: tags.map((tag) => tag.name).join(" "),
+      category,
+    };
   }
 }
 
