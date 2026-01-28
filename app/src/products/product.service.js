@@ -63,10 +63,20 @@ class ProductService {
       .filter((tag) => tag);
   }
 
-  async findProducts() {
-    const products = await this.productRepository.findProducts();
+  async findProducts({ userId, searchType, value, limit, cursor, cursorId }) {
+    if (userId) {
+      return await this.productRepository.findProductsByUser(userId, limit, cursor, cursorId);
+    } else if (searchType) {
+      return await this.productRepository.findProductsByKeyword(
+        searchType,
+        value,
+        limit,
+        cursor,
+        cursorId
+      );
+    }
 
-    return products;
+    return await this.productRepository.findAllProducts(limit, cursor, cursorId);
   }
 
   async findProductById(productId) {

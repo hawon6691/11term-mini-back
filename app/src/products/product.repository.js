@@ -1,6 +1,14 @@
 "use strict";
 
+const CustomError = require("../utils/customError");
 const { execute } = require("./../config/db");
+
+const QUERY = {
+  FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, i.image_url
+    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1`,
+  CURSOR_QUERY: "AND (p.created_at < ? OR (p.created_at = ? AND p.id < ?))",
+  ORDER_BY_AND_LIMIT_QUERY: "order by p.created_at DESC, p.id DESC LIMIT ?",
+};
 
 class ProductRepository {
   async create(productInfo, connection) {
@@ -42,13 +50,28 @@ class ProductRepository {
     return rows || [];
   }
 
-  async findProducts() {
-    const query = `SELECT p.id AS product_id, p.title, p.price, p.created_at, i.image_url
-    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail;`;
+  async findAllProducts(limit, cursor, cursorId) {
+    const params = [];
+    let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
 
-    const rows = await execute(query);
+    if (cursor && cursorId) {
+      query += ` ${QUERY.CURSOR_QUERY}`;
 
-    return rows || [];
+      params.push(cursor, cursor, cursorId);
+    }
+
+    query += ` ${QUERY.ORDER_BY_AND_LIMIT_QUERY}`;
+    params.push(limit);
+
+    const rows = await execute(query, params);
+
+    return {
+      products: rows,
+      totalCnt: rows.length,
+      nextCursor: rows.length
+        ? { cursor: rows[rows.length - 1].createdAt, cursorId: rows[rows.length - 1].productId }
+        : null,
+    };
   }
 
   async findProductById(productId) {
@@ -57,6 +80,66 @@ class ProductRepository {
     const [rows] = await execute(query, [productId]);
 
     return rows || null;
+  }
+
+  async findProductsByUser(userId, limit, cursor, cursorId) {
+    let query = `${QUERY.FIND_ALL_PRODUCTS_QUERY} WHERE p.user_id = ?`;
+
+    const params = [userId];
+
+    if (cursor && cursorId) {
+      query += ` ${QUERY.CURSOR_QUERY}`;
+
+      params.push(cursor, cursor, cursorId);
+    }
+
+    query += ` ${QUERY.ORDER_BY_AND_LIMIT_QUERY}`;
+    params.push(limit);
+
+    const rows = await execute(query, params);
+
+    return {
+      products: rows,
+      totalCnt: rows.length,
+      nextCursor: rows.length
+        ? { cursor: rows[rows.length - 1].createdAt, cursorId: rows[rows.length - 1].productId }
+        : null,
+    };
+  }
+
+  async findProductsByKeyword(searchType, value, limit, cursor, cursorId) {
+    const params = [];
+    let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
+
+    if (searchType === "tag") {
+      query += ` JOIN product_tags pt ON pt.product_id = p.id
+        JOIN tags t ON t.id = pt.tag_id
+        WHERE t.name = ?`;
+      params.push(value);
+    } else if (searchType === "title") {
+      query += ` WHERE p.title LIKE ?`;
+      params.push(`%${value}%`);
+    } else {
+      throw new CustomError("잘못된 검색 형식입니다.", 400);
+    }
+
+    if (cursor && cursorId) {
+      query += ` ${QUERY.CURSOR_QUERY}`;
+
+      params.push(cursor, cursor, cursorId);
+    }
+
+    query += ` ${QUERY.ORDER_BY_AND_LIMIT_QUERY}`;
+    params.push(limit);
+
+    const rows = await execute(query, params);
+
+    return {
+      products: rows,
+      nextCursor: rows.length
+        ? { cursor: rows[rows.length - 1].createdAt, cursorId: rows[rows.length - 1].productId }
+        : null,
+    };
   }
 }
 

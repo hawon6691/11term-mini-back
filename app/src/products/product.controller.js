@@ -29,9 +29,18 @@ class ProductController {
 
   findProducts = async (req, res, next) => {
     try {
-      const products = await this.productService.findProducts();
+      const { userId, searchType, value, limit = 50, cursor, cursorId } = req.query;
 
-      res.status(200).json({ data: products, totalCnt: products.length });
+      const data = await this.productService.findProducts({
+        userId,
+        searchType,
+        value,
+        limit: Number(limit),
+        cursor,
+        cursorId: cursorId ? Number(cursorId) : null,
+      });
+
+      res.status(200).json({ data });
     } catch (error) {
       console.error(error);
       next(error);
