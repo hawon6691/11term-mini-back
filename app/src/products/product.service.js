@@ -63,10 +63,22 @@ class ProductService {
       .filter((tag) => tag);
   }
 
-  async findProducts() {
-    const products = await this.productRepository.findProducts();
+  async findProducts({ userId, searchType, value, limit, cursor, cursorId }) {
+    if (userId || searchType) {
+      if (searchType && searchType !== "tag" && searchType !== "title")
+        throw new CustomError("잘못된 검색 형식입니다.", 400);
 
-    return products;
+      return await this.productRepository.findProducts(
+        userId,
+        searchType,
+        value,
+        limit,
+        cursor,
+        cursorId
+      );
+    }
+
+    return await this.productRepository.findAllProducts(limit, cursor, cursorId);
   }
 
   async findProductById(productId) {
