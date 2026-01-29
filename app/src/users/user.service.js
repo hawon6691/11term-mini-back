@@ -1,5 +1,7 @@
 "use strict";
 
+const CustomError = require("../utils/customError");
+
 class UserService {
   constructor(userRepository) {
     this.userRepository = userRepository;
@@ -40,9 +42,7 @@ class UserService {
     ]);
 
     if (!user) {
-      const error = new Error("User not found");
-      error.statusCode = 404;
-      throw error;
+      throw new CustomError("사용자를 찾을 수 없습니다.", 404);
     }
 
     return {

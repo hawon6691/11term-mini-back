@@ -5,7 +5,7 @@ class UserController {
     this.userService = userService;
   }
 
-  getUserInfo = async (req, res) => {
+  getUserInfo = async (req, res, next) => {
     try {
       const { id } = req.params;
       const userData = await this.userService.getUserInfo(id);
@@ -14,10 +14,7 @@ class UserController {
         data: userData,
       });
     } catch (error) {
-      const statusCode = error.statusCode || 500;
-      return res.status(statusCode).json({
-        error: error.message,
-      });
+      next(error);
     }
   };
 }
