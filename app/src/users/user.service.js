@@ -1,5 +1,7 @@
 "use strict";
 
+const CustomError = require("../utils/customError");
+
 class UserService {
   constructor(userRepository) {
     this.userRepository = userRepository;
@@ -31,6 +33,34 @@ class UserService {
 
   async findRefreshToken(id) {
     return await this.userRepository.findRefreshToken(id);
+  }
+
+  async getUserInfo(userId) {
+    const [user, followData] = await Promise.all([
+      this.userRepository.findUserById(userId),
+      this.userRepository.getFollowInfo(userId),
+    ]);
+
+    if (!user) {
+      throw new CustomError("사용자를 찾을 수 없습니다.", 404);
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      nickname: user.nickname,
+      address: user.address,
+      visitCount: user.visitCount,
+      createdAt: user.createdAt,
+      imageUrl: user.imageUrl,
+      follow: {
+        followingList: followData.followingList,
+        followerList: followData.followerList,
+        followingCnt: followData.followingCnt,
+        followerCnt: followData.followerCnt,
+      },
+    };
   }
 }
 
