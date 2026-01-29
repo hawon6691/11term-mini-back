@@ -13,5 +13,6 @@ const userController = new UserController(userService);
 
 // 사용자 정보 조회
 router.get("/:id", userController.getUserInfo);
+router.patch("/nickname/:id", userController.updateNickname);
 
 module.exports = router;

@@ -62,6 +62,33 @@ class UserService {
       },
     };
   }
+
+  async updateNickname(userId, nickname) {
+    if (!nickname || nickname.trim() === "") {
+      throw new CustomError("상점명을 입력해주세요.", 400);
+    }
+
+    const trimmedNickname = nickname.trim();
+    if (trimmedNickname.length < 2) {
+      throw new CustomError("상점명은 최소 2자 이상이어야 합니다.");
+    }
+    if (trimmedNickname.length > 20) {
+      throw new CustomError("상점명은 최대 20자 까지 가능합니다.");
+    }
+
+    const nicknamePattern = /^[가-힣a-zA-Z0-9]+$/;
+    if (!nicknamePattern.test(trimmedNickname)) {
+      throw new CustomError("상점명은 한글, 영문, 숫자만 사용 가능합니다.", 400);
+    }
+
+    const existingUser = await this.userRepository.findUserByNickname(trimmedNickname);
+
+    if (existingUser && existingUser.id !== parseInt(userId)) {
+      throw new CustomError("이미 사용 중인 상점명입니다.", 409);
+    }
+
+    await this.userRepository.updateNickname(userId, trimmedNickname);
+  }
 }
 
 module.exports = UserService;
