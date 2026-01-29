@@ -64,10 +64,12 @@ class ProductService {
   }
 
   async findProducts({ userId, searchType, value, limit, cursor, cursorId }) {
-    if (userId) {
-      return await this.productRepository.findProductsByUser(userId, limit, cursor, cursorId);
-    } else if (searchType) {
-      return await this.productRepository.findProductsByKeyword(
+    if (userId || searchType) {
+      if (searchType && searchType !== "tag" && searchType !== "title")
+        throw new CustomError("잘못된 검색 형식입니다.", 400);
+
+      return await this.productRepository.findProducts(
+        userId,
         searchType,
         value,
         limit,

@@ -67,7 +67,6 @@ class ProductRepository {
 
     return {
       products: rows,
-      totalCnt: rows.length,
       nextCursor: rows.length
         ? { cursor: rows[rows.length - 1].createdAt, cursorId: rows[rows.length - 1].productId }
         : null,
@@ -82,45 +81,23 @@ class ProductRepository {
     return rows || null;
   }
 
-  async findProductsByUser(userId, limit, cursor, cursorId) {
-    let query = `${QUERY.FIND_ALL_PRODUCTS_QUERY} WHERE p.user_id = ?`;
-
-    const params = [userId];
-
-    if (cursor && cursorId) {
-      query += ` ${QUERY.CURSOR_QUERY}`;
-
-      params.push(cursor, cursor, cursorId);
-    }
-
-    query += ` ${QUERY.ORDER_BY_AND_LIMIT_QUERY}`;
-    params.push(limit);
-
-    const rows = await execute(query, params);
-
-    return {
-      products: rows,
-      totalCnt: rows.length,
-      nextCursor: rows.length
-        ? { cursor: rows[rows.length - 1].createdAt, cursorId: rows[rows.length - 1].productId }
-        : null,
-    };
-  }
-
-  async findProductsByKeyword(searchType, value, limit, cursor, cursorId) {
+  async findProducts(userId, searchType, value, limit, cursor, cursorId) {
     const params = [];
     let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
 
-    if (searchType === "tag") {
-      query += ` JOIN product_tags pt ON pt.product_id = p.id
+    if (userId) {
+      query += ` WHERE p.user_id = ?`;
+      params.push(userId);
+    } else {
+      if (searchType === "tag") {
+        query += ` JOIN product_tags pt ON pt.product_id = p.id
         JOIN tags t ON t.id = pt.tag_id
         WHERE t.name = ?`;
-      params.push(value);
-    } else if (searchType === "title") {
-      query += ` WHERE p.title LIKE ?`;
-      params.push(`%${value}%`);
-    } else {
-      throw new CustomError("잘못된 검색 형식입니다.", 400);
+        params.push(value);
+      } else {
+        query += ` WHERE p.title LIKE ?`;
+        params.push(`%${value}%`);
+      }
     }
 
     if (cursor && cursorId) {
