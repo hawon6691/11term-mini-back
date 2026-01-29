@@ -68,6 +68,33 @@ class UserRepository {
 
     return rows.affectedRows > 0;
   }
+
+  async getFollowInfo(userId) {
+    const followingQuery = `
+      SELECT u.id, u.nickname, u.image_url
+      FROM follows f
+      JOIN users u ON f.following_id = u.id
+      WHERE f.follower_id = ?
+    `;
+    const followingRows = await execute(followingQuery, [userId]);
+    const followingList = camelcaseKeys(followingRows, { deep: true });
+
+    const followerQuery = `
+      SELECT u.id, u.nickname, u.image_url
+      FROM follows f
+      JOIN users u ON f.follower_id = u.id
+      WHERE f.following_id = ?
+    `;
+    const followerRows = await execute(followerQuery, [userId]);
+    const followerList = camelcaseKeys(followerRows, { deep: true });
+
+    return {
+      followingList,
+      followerList,
+      followingCnt: followingList.length,
+      followerCnt: followerList.length,
+    };
+  }
 }
 
 module.exports = UserRepository;
