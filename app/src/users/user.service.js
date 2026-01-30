@@ -62,6 +62,16 @@ class UserService {
       },
     };
   }
+
+  async updateNickname(userId, nickname) {
+    const existingUser = await this.userRepository.findUserByNickname(nickname);
+
+    if (existingUser && existingUser.id !== userId) {
+      throw new CustomError("이미 사용 중인 상점명입니다.", 409);
+    }
+
+    await this.userRepository.updateNickname(userId, nickname);
+  }
 }
 
 module.exports = UserService;

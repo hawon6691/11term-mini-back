@@ -95,6 +95,11 @@ class UserRepository {
       followerCnt: followerList.length,
     };
   }
+
+  async updateNickname(userId, nickname) {
+    const query = "UPDATE users SET nickname = ? WHERE id = ?";
+    await execute(query, [nickname, userId]);
+  }
 }
 
 module.exports = UserRepository;
