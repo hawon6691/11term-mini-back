@@ -50,6 +50,7 @@ class UserService {
       email: user.email,
       name: user.name,
       nickname: user.nickname,
+      description: user.description,
       address: user.address,
       visitCount: user.visitCount,
       createdAt: user.createdAt,
@@ -77,37 +78,31 @@ class UserService {
     await this.userRepository.updateDescription(userId, summary);
   }
 
-  async followUser(followerId, followingId) {
-    const followerIdInt = parseInt(followerId);
-    const followingIdInt = parseInt(followingId);
-
-    if (followerIdInt === followingIdInt) {
+  async followUser(followerId, targetId) {
+    if (followerId === targetId) {
       throw new CustomError("본인을 팔로우할 수 없습니다.", 400);
     }
 
-    const targetUser = await this.userRepository.findUserById(followingIdInt);
+    const targetUser = await this.userRepository.findUserById(targetId);
     if (!targetUser) {
       throw new CustomError("팔로우할 사용자를 찾을 수 없습니다.", 404);
     }
 
-    const isFollowing = await this.userRepository.checkFollow(followerIdInt, followingIdInt);
+    const isFollowing = await this.userRepository.checkFollow(followerId, targetId);
     if (isFollowing) {
       throw new CustomError("이미 팔로우 중입니다.", 409);
     }
 
-    await this.userRepository.createFollow(followerIdInt, followingIdInt);
+    await this.userRepository.createFollow(followerId, targetId);
   }
 
-  async unfollowUser(followerId, followingId) {
-    const followerIdInt = parseInt(followerId);
-    const followingIdInt = parseInt(followingId);
-
-    const isFollowing = await this.userRepository.checkFollow(followerIdInt, followingIdInt);
+  async unfollowUser(followerId, targetId) {
+    const isFollowing = await this.userRepository.checkFollow(followerId, targetId);
     if (!isFollowing) {
-      throw new CustomError("팔로우 중이 아닙니다.", 400);
+      throw new CustomError("팔로우 중이 아닙니다.", 409);
     }
 
-    await this.userRepository.deleteFollow(followerIdInt, followingIdInt);
+    await this.userRepository.deleteFollow(followerId, targetId);
   }
 }
 
