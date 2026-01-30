@@ -5,7 +5,11 @@ const UserController = require("../users/user.controller");
 const UserService = require("../users/user.service");
 const UserRepository = require("../users/user.repository");
 const authGuard = require("../auth/guard/auth.guard");
-const { updateNicknameValidator } = require("../validators/user.validator");
+const {
+  updateNicknameValidator,
+  updateSummaryValidator,
+  followValidator,
+} = require("../validators/user.validator");
 const validate = require("../middleware/validate");
 
 const router = express.Router();
@@ -21,6 +25,15 @@ router.patch(
   validate,
   userController.updateNickname
 );
+router.patch(
+  "/summary",
+  authGuard(),
+  updateSummaryValidator,
+  validate,
+  userController.updateSummary
+);
+router.post("/follow", authGuard(), followValidator, validate);
+router.delete("/follow", authGuard(), followValidator, validate);
 router.get("/:id", userController.getUserInfo);
 
 module.exports = router;

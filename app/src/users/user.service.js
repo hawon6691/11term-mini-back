@@ -72,6 +72,43 @@ class UserService {
 
     await this.userRepository.updateNickname(userId, nickname);
   }
+
+  async updateSummary(userId, summary) {
+    await this.userRepository.updateDescription(userId, summary);
+  }
+
+  async followUser(followerId, followingId) {
+    const followerIdInt = parseInt(followerId);
+    const followingIdInt = parseInt(followingId);
+
+    if (followerIdInt === followingIdInt) {
+      throw new CustomError("본인을 팔로우할 수 없습니다.", 400);
+    }
+
+    const targetUser = await this.userRepository.findUserById(followingIdInt);
+    if (!targetUser) {
+      throw new CustomError("팔로우할 사용자를 찾을 수 없습니다.", 404);
+    }
+
+    const isFollowing = await this.userRepository.checkFollow(followerIdInt, followingIdInt);
+    if (isFollowing) {
+      throw new CustomError("이미 팔로우 중입니다.", 409);
+    }
+
+    await this.userRepository.createFollow(followerIdInt, followingIdInt);
+  }
+
+  async unfollowUser(followerId, followingId) {
+    const followerIdInt = parseInt(followerId);
+    const followingIdInt = parseInt(followingId);
+
+    const isFollowing = await this.userRepository.checkFollow(followerIdInt, followingIdInt);
+    if (!isFollowing) {
+      throw new CustomError("팔로우 중이 아닙니다.", 400);
+    }
+
+    await this.userRepository.deleteFollow(followerIdInt, followingIdInt);
+  }
 }
 
 module.exports = UserService;

@@ -100,6 +100,36 @@ class UserRepository {
     const query = "UPDATE users SET nickname = ? WHERE id = ?";
     await execute(query, [nickname, userId]);
   }
+
+  async updateDescription(userId, description) {
+    const query = "UPDATE users SET description = ? WHERE id = ?";
+    await execute(query, [description, userId]);
+  }
+
+  async checkFollow(followerId, followingId) {
+    const query = `
+      SELECT * FROM follows
+      WHERE follower_id = ? AND following_id = ?
+    `;
+    const rows = await execute(query, [followerId, followingId]);
+    return rows.length > 0;
+  }
+
+  async createFollow(followerId, followingId) {
+    const query = `
+      INSERT INTO follows (follower_id, following_id)
+      VALUES (?, ?)
+    `;
+    await execute(query, [followerId, followingId]);
+  }
+
+  async deleteFollow(followerId, followingId) {
+    const query = `
+      DELETE FROM follows
+      WHERE follower_id = ? AND following_id = ?
+    `;
+    await execute(query, [followerId, followingId]);
+  }
 }
 
 module.exports = UserRepository;
