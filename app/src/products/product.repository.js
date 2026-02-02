@@ -4,8 +4,8 @@ const CustomError = require("../utils/customError");
 const { execute } = require("./../config/db");
 
 const QUERY = {
-  FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, i.image_url
-    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1`,
+  FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, p.is_shipping_cost, p.sale_status, i.image_url
+    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1 WHERE deleted_at IS NULL`,
   CURSOR_QUERY: "AND (p.created_at < ? OR (p.created_at = ? AND p.id < ?))",
   ORDER_BY_AND_LIMIT_QUERY: "order by p.created_at DESC, p.id DESC LIMIT ?",
 };
@@ -32,12 +32,20 @@ class ProductRepository {
     return rows || null;
   }
 
-  async saveProductImage(images, connection) {
+  async saveProductImage(productId, images, connection) {
     const query = "INSERT INTO product_images(product_id, image_url, is_thumbnail) VALUES ?;";
 
-    const values = images.map((img, index) => [img.productId, img.imageUrl, index === 0]);
+    const values = images.map((img, index) => [productId, img, index === 0]);
 
     const [rows] = await connection.query(query, [values]);
+
+    return rows || null;
+  }
+
+  async deleteProductImage(productId, connection) {
+    const query = "DELETE FROM product_images WHERE product_id = ?;";
+
+    const [rows] = await connection.query(query, [productId]);
 
     return rows || null;
   }
@@ -74,7 +82,7 @@ class ProductRepository {
   }
 
   async findProductById(productId) {
-    const query = `SELECT * FROM products WHERE id = ?;`;
+    const query = `SELECT * FROM products WHERE deleted_at IS NULL AND id = ?;`;
 
     const [rows] = await execute(query, [productId]);
 
@@ -86,7 +94,7 @@ class ProductRepository {
     let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
 
     if (userId) {
-      query += ` WHERE p.user_id = ?`;
+      query += ` AND p.user_id = ?`;
       params.push(userId);
     } else {
       if (searchType === "tag") {
@@ -95,7 +103,7 @@ class ProductRepository {
         WHERE t.name = ?`;
         params.push(value);
       } else {
-        query += ` WHERE p.title LIKE ?`;
+        query += ` AND p.title LIKE ?`;
         params.push(`%${value}%`);
       }
     }
@@ -117,6 +125,30 @@ class ProductRepository {
         ? { cursor: rows[rows.length - 1].createdAt, cursorId: rows[rows.length - 1].productId }
         : null,
     };
+  }
+
+  async editProduct(productId, setClause, values, connection) {
+    const query = `UPDATE products SET ${setClause} WHERE id = ?;`;
+
+    const [rows] = await connection.query(query, [...values, productId]);
+
+    return rows || null;
+  }
+
+  async deleteProduct(productId) {
+    const query = "UPDATE products SET deleted_at = now() WHERE id = ?;";
+
+    const rows = await execute(query, [productId]);
+
+    return rows || null;
+  }
+
+  async editProductStatus(productId, status) {
+    const query = "UPDATE products SET sale_status = ? WHERE id = ?;";
+
+    const rows = await execute(query, [status, productId]);
+
+    return rows || null;
   }
 }
 

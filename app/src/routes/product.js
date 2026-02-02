@@ -52,4 +52,9 @@ router.post(
 router.get("/", productController.findProducts);
 router.get("/:id", productController.findProductById);
 
+router.patch("/:id", authGuard(), productController.editProduct);
+router.delete("/:id", authGuard(), productController.deleteProduct);
+
+router.patch("/status/:id", authGuard(), productController.editProductStatus);
+
 module.exports = router;
