@@ -7,7 +7,13 @@ const QUERY = {
   FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, p.is_shipping_cost, p.sale_status, i.image_url
     FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1 WHERE deleted_at IS NULL`,
   CURSOR_QUERY: "AND (p.created_at < ? OR (p.created_at = ? AND p.id < ?))",
-  ORDER_BY_AND_LIMIT_QUERY: "order by p.created_at DESC, p.id DESC LIMIT ?",
+  LIMIT_QUERY: "LIMIT ?",
+};
+
+const ORDER_BY_QUERY = {
+  latest: "ORDER BY p.created_at DESC, p.id DESC",
+  price_desc: "ORDER BY p.price DESC, p.id DESC",
+  price_asc: "ORDER BY p.price ASC, p.id ASC",
 };
 
 class ProductRepository {
@@ -58,7 +64,7 @@ class ProductRepository {
     return rows || [];
   }
 
-  async findAllProducts(limit, cursor, cursorId) {
+  async findAllProducts(limit, cursor, cursorId, orderby) {
     const params = [];
     let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
 
@@ -68,7 +74,7 @@ class ProductRepository {
       params.push(cursor, cursor, cursorId);
     }
 
-    query += ` ${QUERY.ORDER_BY_AND_LIMIT_QUERY}`;
+    query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY}`;
     params.push(limit);
 
     const rows = await execute(query, params);
@@ -89,7 +95,7 @@ class ProductRepository {
     return rows || null;
   }
 
-  async findProducts(userId, searchType, value, limit, cursor, cursorId) {
+  async findProducts(userId, searchType, value, limit, cursor, cursorId, orderby) {
     const params = [];
     let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
 
@@ -114,7 +120,7 @@ class ProductRepository {
       params.push(cursor, cursor, cursorId);
     }
 
-    query += ` ${QUERY.ORDER_BY_AND_LIMIT_QUERY}`;
+    query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY}`;
     params.push(limit);
 
     const rows = await execute(query, params);

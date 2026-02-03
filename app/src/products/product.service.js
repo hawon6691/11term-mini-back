@@ -17,6 +17,7 @@ const PRODUCT_COLUMNS = [
   "tags",
   "images",
 ];
+const SORT_TYPE = ["latest", "price_asc", "price_desc"];
 
 class ProductService {
   constructor(productRepository, tagService, productTagService, categoryService) {
@@ -65,7 +66,11 @@ class ProductService {
     });
   }
 
-  async findProducts({ userId, searchType, value, limit, cursor, cursorId }) {
+  async findProducts({ userId, searchType, value, limit, cursor, cursorId, orderby }) {
+    if (!SORT_TYPE.includes(orderby)) {
+      throw new CustomError("잘못된 정렬 형식입니다.", 400);
+    }
+
     if (userId || searchType) {
       if (searchType && searchType !== "tag" && searchType !== "title")
         throw new CustomError("잘못된 검색 형식입니다.", 400);
@@ -76,11 +81,12 @@ class ProductService {
         value,
         limit,
         cursor,
-        cursorId
+        cursorId,
+        orderby
       );
     }
 
-    return await this.productRepository.findAllProducts(limit, cursor, cursorId);
+    return await this.productRepository.findAllProducts(limit, cursor, cursorId, orderby);
   }
 
   async findProductById(productId) {

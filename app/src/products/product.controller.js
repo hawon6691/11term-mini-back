@@ -29,7 +29,15 @@ class ProductController {
 
   findProducts = async (req, res, next) => {
     try {
-      const { userId, searchType, value, limit = 50, cursor, cursorId } = req.query;
+      const {
+        userId,
+        searchType,
+        value,
+        limit = 50,
+        cursor,
+        cursorId,
+        orderby = "latest",
+      } = req.query;
 
       const data = await this.productService.findProducts({
         userId,
@@ -38,6 +46,7 @@ class ProductController {
         limit: Number(limit),
         cursor,
         cursorId: cursorId ? Number(cursorId) : null,
+        orderby,
       });
 
       res.status(200).json({ data });
