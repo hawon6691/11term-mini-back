@@ -11,6 +11,7 @@ const QUERY = {
 };
 
 const ORDER_BY_QUERY = {
+  popular: "ORDER BY p.view_cnt DESC, p.id DESC",
   latest: "ORDER BY p.created_at DESC, p.id DESC",
   price_desc: "ORDER BY p.price DESC, p.id DESC",
   price_asc: "ORDER BY p.price ASC, p.id ASC",
@@ -153,6 +154,14 @@ class ProductRepository {
     const query = "UPDATE products SET sale_status = ? WHERE id = ?;";
 
     const rows = await execute(query, [status, productId]);
+
+    return rows || null;
+  }
+
+  async increaseViewCount(productId) {
+    const query = "UPDATE products SET view_cnt = view_cnt + 1 WHERE id = ?;";
+
+    const rows = await execute(query, [productId]);
 
     return rows || null;
   }

@@ -17,7 +17,7 @@ const PRODUCT_COLUMNS = [
   "tags",
   "images",
 ];
-const SORT_TYPE = ["latest", "price_asc", "price_desc"];
+const SORT_TYPE = ["popular", "latest", "price_asc", "price_desc"];
 
 class ProductService {
   constructor(productRepository, tagService, productTagService, categoryService) {
@@ -122,6 +122,8 @@ class ProductService {
       category.category1 = parentCategory;
       category.category2 = categoryData;
     }
+
+    await this.productRepository.increaseViewCount(productId);
 
     return {
       ...product,
