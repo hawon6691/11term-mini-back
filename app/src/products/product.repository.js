@@ -1,7 +1,7 @@
 "use strict";
 
-const CustomError = require("../utils/customError");
 const { execute } = require("./../config/db");
+const { PRODUCT_STATUS, TRENDING_CONFIG } = require("./product.constants");
 
 const QUERY = {
   FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, i.image_url
@@ -127,28 +127,32 @@ class ProductRepository {
         p.price,
         p.view_cnt AS viewCnt,
         p.created_at AS createdAt,
-        (
-          SELECT pi.image_url
-          FROM product_images pi
-          WHERE pi.product_id = p.id AND pi.is_thumbnail = 1
-          LIMIT 1
-        ) AS imageUrl,
-        COALESCE(liked_counts.cnt, 0) AS likedCnt,
-        (p.view_cnt + COALESCE(liked_counts.cnt, 0) * 2) AS popularityScore
+        pi.image_url AS imageUrl,
+        COALESCE(lc.cnt, 0) AS likedCnt,
+        (p.view_cnt + COALESCE(lc.cnt, 0) * ?) AS popularityScore
       FROM products p
+      LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_thumbnail = 1
       LEFT JOIN (
         SELECT product_id, COUNT(*) AS cnt
         FROM liked_product
         GROUP BY product_id
-      ) AS liked_counts ON p.id = liked_counts.product_id
-      WHERE p.sale_status = 0
+      ) AS lc ON p.id = lc.product_id
+      WHERE p.sale_status = ?
         AND p.deleted_at IS NULL
-        AND p.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        AND p.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+      GROUP BY p.id, p.title, p.price, p.view_cnt, p.created_at, pi.image_url, lc.cnt
       ORDER BY popularityScore DESC
-      LIMIT 20
+      LIMIT ?
     `;
 
-    const rows = await execute(query);
+    const params = [
+      TRENDING_CONFIG.LIKE_WEIGHT,
+      PRODUCT_STATUS.ON_SALE,
+      TRENDING_CONFIG.DAYS_LIMIT,
+      TRENDING_CONFIG.RESULT_LIMIT,
+    ];
+
+    const rows = await execute(query, params);
     return rows || [];
   }
 }

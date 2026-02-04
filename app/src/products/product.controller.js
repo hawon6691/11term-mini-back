@@ -67,10 +67,11 @@ class ProductController {
   getTrendingProducts = async (req, res, next) => {
     try {
       const data = await this.productService.getTrendingProducts();
+      const products = data?.products || [];
 
       res.status(200).json({
-        data: data.products,
-        totalCnt: data.products.length,
+        data: products,
+        totalCnt: products.length,
       });
     } catch (error) {
       console.error(error);
