@@ -1,6 +1,7 @@
 "use strict";
 
 const CustomError = require("../utils/customError");
+const buildImagePath = require("../utils/file.util");
 
 class ProductController {
   constructor(productService) {
@@ -10,17 +11,28 @@ class ProductController {
   create = async (req, res, next) => {
     try {
       const userId = req.user.id;
-      const files = req.files ?? [];
 
       const productInfo = {
         ...req.body,
-        files,
         userId,
       };
 
       const productId = await this.productService.create(productInfo);
 
       res.status(201).json({ message: "상품 등록을 성공했습니다.", productId });
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  };
+
+  uploadProductImages = async (req, res, next) => {
+    try {
+      const files = req.files ?? [];
+
+      const images = files.map((file) => buildImagePath(file.filename));
+
+      res.status(200).json({ images });
     } catch (error) {
       console.error(error);
       next(error);
