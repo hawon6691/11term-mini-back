@@ -66,11 +66,11 @@ class ProductController {
 
   getTrendingProducts = async (req, res, next) => {
     try {
-      const products = await this.productService.getTrendingProducts();
+      const data = await this.productService.getTrendingProducts();
 
       res.status(200).json({
-        data: products,
-        totalCnt: products.length,
+        data: data.products,
+        totalCnt: data.products.length,
       });
     } catch (error) {
       console.error(error);

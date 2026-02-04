@@ -124,7 +124,9 @@ class ProductService {
   }
 
   async getTrendingProducts() {
-    return await this.productRepository.getTrendingProducts();
+    const products = await this.productRepository.getTrendingProducts();
+    const cleanProducts = products.map(({ popularityScore, ...product }) => product);
+    return { products: cleanProducts };
   }
 }
 
