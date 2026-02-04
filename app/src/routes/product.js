@@ -34,6 +34,7 @@ const categoryRepository = new CategoryRepository();
 const categoryService = new CategoryService(categoryRepository);
 
 const searchRepository = new SearchRepository();
+const searchService = new SearchService(searchRepository);
 
 const productRepository = new ProductRepository();
 const productService = new ProductService(
@@ -41,7 +42,7 @@ const productService = new ProductService(
   tagService,
   productTagService,
   categoryService,
-  searchRepository
+  searchService
 );
 const productController = new ProductController(productService);
 

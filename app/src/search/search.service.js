@@ -19,7 +19,7 @@ class SearchService {
     let prevCount = null;
 
     return keywords.map((item, index) => {
-      if (prevCount !== null && item.search_count !== prevCount) {
+      if (prevCount !== item.search_count) {
         currentRank = index + 1;
       }
 
