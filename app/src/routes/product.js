@@ -20,6 +20,8 @@ const CategoryRepository = require("./../categories/category.repository");
 const ProductTagService = require("./../productTags/productTag.service");
 const ProductTagRepository = require("./../productTags/productTag.repoitory");
 
+const SearchRepository = require("./../search/search.repository");
+
 const router = express.Router();
 
 const tagRepository = new TagRepository();
@@ -31,12 +33,15 @@ const productTagService = new ProductTagService(productTagRepository);
 const categoryRepository = new CategoryRepository();
 const categoryService = new CategoryService(categoryRepository);
 
+const searchRepository = new SearchRepository();
+
 const productRepository = new ProductRepository();
 const productService = new ProductService(
   productRepository,
   tagService,
   productTagService,
-  categoryService
+  categoryService,
+  searchRepository
 );
 const productController = new ProductController(productService);
 
@@ -48,7 +53,6 @@ router.post(
   validate,
   productController.create
 );
-
 router.get("/", productController.findProducts);
 router.get("/:id", productController.findProductById);
 

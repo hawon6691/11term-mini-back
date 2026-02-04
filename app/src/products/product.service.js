@@ -5,11 +5,12 @@ const CustomError = require("../utils/customError");
 const buildImagePath = require("../utils/file.util");
 
 class ProductService {
-  constructor(productRepository, tagService, productTagService, categoryService) {
+  constructor(productRepository, tagService, productTagService, categoryService, searchRepository) {
     this.productRepository = productRepository;
     this.tagService = tagService;
     this.productTagService = productTagService;
     this.categoryService = categoryService;
+    this.searchRepository = searchRepository;
   }
 
   async create({ files, ...productData }) {
