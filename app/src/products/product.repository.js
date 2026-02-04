@@ -118,6 +118,31 @@ class ProductRepository {
         : null,
     };
   }
+
+  async getTrendingProducts() {
+    const query = `
+      SELECT
+        p.id,
+        p.title,
+        p.price,
+        p.view_cnt AS viewCnt,
+        p.created_at AS createdAt,
+        pi.image_url AS imageUrl,
+        COUNT(lp.product_id) AS likedCnt
+      FROM products p
+      LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_thumbnail = 1
+      LEFT JOIN liked_product lp ON p.id = lp.product_id
+      WHERE p.sale_status = 0
+        AND p.deleted_at IS NULL
+        AND p.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+      GROUP BY p.id, p.title, p.price, p.view_cnt, p.created_at, pi.image_url
+      ORDER BY (p.view_cnt + COUNT(lp.product_id) * 2) DESC
+      LIMIT 20
+    `;
+
+    const rows = await execute(query);
+    return rows || [];
+  }
 }
 
 module.exports = ProductRepository;

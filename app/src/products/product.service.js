@@ -122,6 +122,10 @@ class ProductService {
       category,
     };
   }
+
+  async getTrendingProducts() {
+    return await this.productRepository.getTrendingProducts();
+  }
 }
 
 module.exports = ProductService;
