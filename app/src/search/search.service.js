@@ -15,11 +15,22 @@ class SearchService {
   async getPopularKeywords(limit = 10) {
     const keywords = await this.searchRepository.getPopularKeywords(limit);
 
-    return keywords.map((item, index) => ({
-      rank: index + 1,
-      keyword: item.keyword,
-      searchCount: item.search_count,
-    }));
+    let currentRank = 1;
+    let prevCount = null;
+
+    return keywords.map((item, index) => {
+      if (prevCount !== null && item.search_count !== prevCount) {
+        currentRank = index + 1;
+      }
+
+      prevCount = item.search_count;
+
+      return {
+        rank: currentRank,
+        keyword: item.keyword,
+        searchCount: item.search_count,
+      };
+    });
   }
 }
 
