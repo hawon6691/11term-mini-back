@@ -30,7 +30,7 @@ class UserRepository {
 
   async create(userInfo) {
     const query =
-      "INSERT INTO users(email, password, name, nickname, address) VALUE(?, ?, ?, ?, ?);";
+      "INSERT INTO users(email, password, name, nickname, address) VALUES(?, ?, ?, ?, ?);";
 
     const rows = await execute(query, [
       userInfo.email,
