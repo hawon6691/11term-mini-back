@@ -7,13 +7,13 @@ const QUERY = {
   FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, i.image_url
     FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1`,
   CURSOR_QUERY: "AND (p.created_at < ? OR (p.created_at = ? AND p.id < ?))",
-  ORDER_BY_AND_LIMIT_QUERY: "order by p.created_at DESC, p.id DESC LIMIT ?",
+  ORDER_BY_AND_LIMIT_QUERY: "ORDER BY p.created_at DESC, p.id DESC LIMIT ?",
 };
 
 class ProductRepository {
   async create(productInfo, connection) {
     const query = `INSERT INTO
-      products(user_id, title, description, product_condition, price, is_shipping_cost, shipping_cost, is_direct_deal, direct_deal_location, category_id) 
+      products(user_id, title, description, product_condition, price, is_shipping_cost, shipping_cost, is_direct_deal, direct_deal_location, category_id)
       VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
 
     const [rows] = await connection.query(query, [
