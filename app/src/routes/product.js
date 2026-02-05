@@ -18,7 +18,7 @@ const CategoryService = require("./../categories/category.service");
 const CategoryRepository = require("./../categories/category.repository");
 
 const ProductTagService = require("./../productTags/productTag.service");
-const ProductTagRepository = require("./../productTags/productTag.repoitory");
+const ProductTagRepository = require("./../productTags/productTag.repository");
 
 const SearchRepository = require("./../search/search.repository");
 
