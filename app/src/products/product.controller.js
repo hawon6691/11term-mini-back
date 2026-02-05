@@ -64,9 +64,9 @@ class ProductController {
     }
   };
 
-  getTrendingProducts = async (req, res, next) => {
+  findTrendingProducts = async (req, res, next) => {
     try {
-      const data = await this.productService.getTrendingProducts();
+      const data = await this.productService.findTrendingProducts();
       const products = data?.products || [];
 
       res.status(200).json({

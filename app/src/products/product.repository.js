@@ -119,7 +119,7 @@ class ProductRepository {
     };
   }
 
-  async getTrendingProducts() {
+  async findTrendingProducts() {
     const query = `
       SELECT
         p.id,
@@ -127,11 +127,16 @@ class ProductRepository {
         p.price,
         p.view_cnt AS viewCnt,
         p.created_at AS createdAt,
-        pi.image_url AS imageUrl,
+        (
+          SELECT pi.image_url
+          FROM product_images pi
+          WHERE pi.product_id = p.id AND pi.is_thumbnail = 1
+          ORDER BY pi.id ASC
+          LIMIT 1
+        ) AS imageUrl,
         COALESCE(lc.cnt, 0) AS likedCnt,
         (p.view_cnt + COALESCE(lc.cnt, 0) * ?) AS popularityScore
       FROM products p
-      LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_thumbnail = 1
       LEFT JOIN (
         SELECT product_id, COUNT(*) AS cnt
         FROM liked_product
@@ -140,7 +145,6 @@ class ProductRepository {
       WHERE p.sale_status = ?
         AND p.deleted_at IS NULL
         AND p.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
-      GROUP BY p.id, p.title, p.price, p.view_cnt, p.created_at, pi.image_url, lc.cnt
       ORDER BY popularityScore DESC
       LIMIT ?
     `;

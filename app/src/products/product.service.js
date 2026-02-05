@@ -123,8 +123,8 @@ class ProductService {
     };
   }
 
-  async getTrendingProducts() {
-    const products = await this.productRepository.getTrendingProducts();
+  async findTrendingProducts() {
+    const products = await this.productRepository.findTrendingProducts();
 
     // popularityScore를 그대로 유지하여 프론트엔드에서 활용 가능
     return { products };

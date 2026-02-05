@@ -49,7 +49,7 @@ router.post(
   productController.create
 );
 
-router.get("/trending", productController.getTrendingProducts);
+router.get("/trending", productController.findTrendingProducts);
 router.get("/", productController.findProducts);
 router.get("/:id", productController.findProductById);
 
