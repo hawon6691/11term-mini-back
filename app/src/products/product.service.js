@@ -5,11 +5,12 @@ const CustomError = require("../utils/customError");
 const buildImagePath = require("../utils/file.util");
 
 class ProductService {
-  constructor(productRepository, tagService, productTagService, categoryService) {
+  constructor(productRepository, tagService, productTagService, categoryService, searchService) {
     this.productRepository = productRepository;
     this.tagService = tagService;
     this.productTagService = productTagService;
     this.categoryService = categoryService;
+    this.searchService = searchService;
   }
 
   async create({ files, ...productData }) {
@@ -64,6 +65,13 @@ class ProductService {
   }
 
   async findProducts({ userId, searchType, value, limit, cursor, cursorId }) {
+    // 검색어가 있으면 검색 로그 저장 (상점별 조회가 아닌 경우에만)
+    if (value && !userId && this.searchService) {
+      this.searchService
+        .saveSearchLog(value, null)
+        .catch((err) => console.error("검색 로그 저장 실패:", err));
+    }
+
     if (userId || searchType) {
       if (searchType && searchType !== "tag" && searchType !== "title")
         throw new CustomError("잘못된 검색 형식입니다.", 400);
