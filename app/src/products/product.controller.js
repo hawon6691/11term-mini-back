@@ -63,6 +63,21 @@ class ProductController {
       next(error);
     }
   };
+
+  findTrendingProducts = async (req, res, next) => {
+    try {
+      const data = await this.productService.findTrendingProducts();
+      const products = data?.products || [];
+
+      res.status(200).json({
+        data: products,
+        totalCnt: products.length,
+      });
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  };
 }
 
 module.exports = ProductController;
