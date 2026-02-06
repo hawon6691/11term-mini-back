@@ -5,12 +5,15 @@ const { execute } = require("./../config/db");
 
 const QUERY = {
   FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, p.is_shipping_cost, p.sale_status, i.image_url
-    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1 WHERE deleted_at IS NULL`,
+    FROM products p 
+    LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1 
+    WHERE deleted_at IS NULL`,
   CURSOR_QUERY: "AND (p.created_at < ? OR (p.created_at = ? AND p.id < ?))",
   LIMIT_QUERY: "LIMIT ?",
 };
 
 const ORDER_BY_QUERY = {
+  accuracy: "",
   popular: "ORDER BY p.view_cnt DESC, p.id DESC",
   latest: "ORDER BY p.created_at DESC, p.id DESC",
   price_desc: "ORDER BY p.price DESC, p.id DESC",
@@ -96,6 +99,12 @@ class ProductRepository {
     return rows || null;
   }
 
+  async findProductById(productId) {
+    const query = `SELECT * FROM products WHERE deleted_at IS NULL AND id = ?;`;
+    const rows = await execute(query, [productId]);
+    return rows?.[0] || null;
+  }
+
   async findProducts(userId, searchType, value, limit, cursor, cursorId, orderby) {
     const params = [];
     let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
@@ -104,24 +113,66 @@ class ProductRepository {
       query += ` AND p.user_id = ?`;
       params.push(userId);
     } else {
+      const keywords = value.trim().split(" ").filter(Boolean);
+
+      if (keywords.length === 0) {
+        return { products: [], nextCursor: null };
+      }
+
       if (searchType === "tag") {
-        query += ` JOIN product_tags pt ON pt.product_id = p.id
-        JOIN tags t ON t.id = pt.tag_id
-        WHERE t.name = ?`;
-        params.push(value);
+        const placeholders = keywords.map(() => "?").join(", ");
+
+        query = `
+        SELECT
+          p.id AS product_id,
+          p.title,
+          p.price,
+          p.created_at,
+          p.is_shipping_cost,
+          p.sale_status,
+          i.image_url,
+          tm.tag_score
+        FROM products p
+        LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1
+        JOIN (
+          SELECT
+            pt.product_id,
+            COUNT(DISTINCT t.name) AS tag_score
+          FROM product_tags pt
+          JOIN tags t ON t.id = pt.tag_id
+          WHERE t.name IN (${placeholders})
+          GROUP BY pt.product_id
+        ) tm ON tm.product_id = p.id
+        WHERE p.deleted_at IS NULL
+      `;
+
+        params.push(...keywords);
       } else {
-        query += ` AND p.title LIKE ?`;
-        params.push(`%${value}%`);
+        for (const keyword of keywords) {
+          query += ` AND p.title LIKE ?`;
+          params.push(`%${keyword}%`);
+        }
       }
     }
 
     if (cursor && cursorId) {
       query += ` ${QUERY.CURSOR_QUERY}`;
-
       params.push(cursor, cursor, cursorId);
     }
 
-    query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY}`;
+    if (orderby === "accuracy") {
+      if (searchType === "tag") {
+        query += ` ORDER BY tm.tag_score DESC, p.created_at DESC, p.id DESC ${QUERY.LIMIT_QUERY}`;
+      } else {
+        const keywords = value.trim().split(" ").filter(Boolean);
+        const scoreExpr = keywords.map(() => `(p.title LIKE ?)`).join(" + ");
+        query += ` ORDER BY (${scoreExpr}) DESC, p.created_at DESC, p.id DESC ${QUERY.LIMIT_QUERY}`;
+        params.push(...keywords.map((k) => `%${k}%`));
+      }
+    } else {
+      query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY}`;
+    }
+
     params.push(limit);
 
     const rows = await execute(query, params);

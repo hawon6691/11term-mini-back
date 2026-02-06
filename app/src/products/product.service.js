@@ -17,7 +17,7 @@ const PRODUCT_COLUMNS = [
   "tags",
   "images",
 ];
-const SORT_TYPE = ["popular", "latest", "price_asc", "price_desc"];
+const SORT_TYPE = ["accuracy", "popular", "latest", "price_asc", "price_desc"];
 
 class ProductService {
   constructor(productRepository, tagService, productTagService, categoryService) {
@@ -74,6 +74,8 @@ class ProductService {
     if (userId || searchType) {
       if (searchType && searchType !== "tag" && searchType !== "title")
         throw new CustomError("잘못된 검색 형식입니다.", 400);
+
+      if (searchType && !value) return { products: [], nextCursor: null };
 
       return await this.productRepository.findProducts(
         userId,
