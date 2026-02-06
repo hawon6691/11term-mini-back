@@ -12,6 +12,7 @@ const ProductRepository = require("../products/product.repository");
 const {
   createReviewValidator,
   getSellerReviewsValidator,
+  updateReviewValidator,
   deleteReviewValidator,
 } = require("../validators/review.validator");
 const validate = require("../middleware/validate");
@@ -36,6 +37,15 @@ router.post(
   createReviewValidator,
   validate,
   reviewController.createReview
+);
+
+router.patch(
+  "/",
+  authGuard(),
+  upload.array("images", 3),
+  updateReviewValidator,
+  validate,
+  reviewController.updateReview
 );
 
 router.delete("/", authGuard(), deleteReviewValidator, validate, reviewController.deleteReview);

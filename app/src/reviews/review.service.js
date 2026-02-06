@@ -98,6 +98,42 @@ class ReviewService {
     return reviewsWithDetails;
   }
 
+  async updateReview(userId, reviewId, updateData) {
+    const { rating, content, tags, files } = updateData;
+
+    return transaction(async (connection) => {
+      const review = await this.reviewRepository.findReviewById(reviewId);
+      if (!review) {
+        throw new CustomError("존재하지 않는 후기입니다.", 404);
+      }
+
+      if (review.userId !== userId) {
+        throw new CustomError("본인이 작성한 후기만 수정할 수 있습니다.", 403);
+      }
+
+      const result = await this.reviewRepository.updateReview(
+        reviewId,
+        { rating, content },
+        connection
+      );
+
+      if (!result || result.affectedRows !== 1) {
+        throw new CustomError("후기 수정에 실패했습니다.");
+      }
+
+      if (tags && tags.length > 0) {
+        await this.reviewRepository.deleteReviewTags(reviewId, connection);
+        await this.reviewRepository.createReviewTags(reviewId, tags, connection);
+      }
+
+      if (files && files.length > 0) {
+        await this.reviewRepository.deleteReviewImages(reviewId, connection);
+        const imageUrls = files.map((file) => buildImagePath(file.filename));
+        await this.reviewRepository.saveReviewImages(reviewId, imageUrls, connection);
+      }
+    });
+  }
+
   async deleteReview(userId, reviewId) {
     return transaction(async (connection) => {
       const review = await this.reviewRepository.findReviewById(reviewId);

@@ -48,6 +48,29 @@ class ReviewController {
     }
   };
 
+  updateReview = async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      const reviewId = Number(req.query.reviewId);
+      const { rating, content, tags } = req.body;
+      const files = req.files || [];
+
+      await this.reviewService.updateReview(userId, reviewId, {
+        rating: Number(rating),
+        content,
+        tags: tags ? JSON.parse(tags) : [],
+        files,
+      });
+
+      res.status(200).json({
+        message: "후기가 수정되었습니다.",
+      });
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  };
+
   deleteReview = async (req, res, next) => {
     try {
       const userId = req.user.id;

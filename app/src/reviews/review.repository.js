@@ -114,6 +114,42 @@ class ReviewRepository {
     return rows || null;
   }
 
+  async updateReview(reviewId, updateData, connection) {
+    const query = `
+      UPDATE reviews
+      SET rating = ?, content = ?
+      WHERE id = ?
+    `;
+
+    const [result] = await connection.query(query, [
+      updateData.rating,
+      updateData.content,
+      reviewId,
+    ]);
+
+    return result;
+  }
+
+  async deleteReviewTags(reviewId, connection) {
+    const query = `
+      DELETE FROM review_tags
+      WHERE review_id = ?
+    `;
+
+    const [result] = await connection.query(query, [reviewId]);
+    return result;
+  }
+
+  async deleteReviewImages(reviewId, connection) {
+    const query = `
+      DELETE FROM review_images
+      WHERE review_id = ?
+    `;
+
+    const [result] = await connection.query(query, [reviewId]);
+    return result;
+  }
+
   async deleteReview(reviewId, connection) {
     const query = `
       DELETE FROM reviews
