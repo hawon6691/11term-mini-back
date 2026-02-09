@@ -64,6 +64,50 @@ class ProductController {
     }
   };
 
+  editProduct = async (req, res, next) => {
+    try {
+      const productId = req.params.id;
+      const productData = req.body;
+      const userId = req.user.id;
+
+      await this.productService.editProduct(productId, productData, userId);
+
+      res.status(200).json({ message: "상품 정보 수정에 성공하였습니다." });
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  };
+
+  deleteProduct = async (req, res, next) => {
+    try {
+      const productId = req.params.id;
+      const userId = req.user.id;
+
+      await this.productService.deleteProduct(productId, userId);
+
+      res.status(200).json({ message: "상품 삭제에 성공하였습니다." });
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  };
+
+  editProductStatus = async (req, res, next) => {
+    try {
+      const productId = req.params.id;
+      const userId = req.user.id;
+      const status = req.body.status;
+
+      await this.productService.editProductStatus(productId, Number(status), userId);
+
+      res.status(200).json({ message: "상품 상태 변경에 성공하였습니다." });
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  };
+
   findTrendingProducts = async (req, res, next) => {
     try {
       const data = await this.productService.findTrendingProducts();

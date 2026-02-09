@@ -20,6 +20,7 @@ const CategoryRepository = require("./../categories/category.repository");
 const ProductTagService = require("./../productTags/productTag.service");
 const ProductTagRepository = require("./../productTags/productTag.repository");
 
+const SearchService = require("./../search/search.service");
 const SearchRepository = require("./../search/search.repository");
 
 const router = express.Router();
@@ -58,5 +59,10 @@ router.post(
 router.get("/trending", productController.findTrendingProducts);
 router.get("/", productController.findProducts);
 router.get("/:id", productController.findProductById);
+
+router.patch("/:id", authGuard(), productController.editProduct);
+router.delete("/:id", authGuard(), productController.deleteProduct);
+
+router.patch("/status/:id", authGuard(), productController.editProductStatus);
 
 module.exports = router;

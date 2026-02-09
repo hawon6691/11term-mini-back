@@ -15,7 +15,7 @@ exports.updateNicknameValidator = [
     .withMessage("상점명은 한글, 영문, 숫자만 사용 가능합니다."),
 ];
 
-exports.updateSummeryValidator = [
+exports.updateSummaryValidator = [
   body("summary")
     .optional({ nullable: true })
     .isLength({ max: 1000 })

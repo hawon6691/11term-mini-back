@@ -12,6 +12,10 @@ class ProductTagService {
   async findProductTags(productId) {
     return await this.productTagRepository.findProductTags(productId);
   }
+
+  async deleteProductTags(productId, connection) {
+    return await this.productTagRepository.deleteProductTags(productId, connection);
+  }
 }
 
 module.exports = ProductTagService;
