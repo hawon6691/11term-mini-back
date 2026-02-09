@@ -20,11 +20,12 @@ const PRODUCT_COLUMNS = [
 const SORT_TYPE = ["popular", "latest", "price_asc", "price_desc"];
 
 class ProductService {
-  constructor(productRepository, tagService, productTagService, categoryService) {
+  constructor(productRepository, tagService, productTagService, categoryService, searchService) {
     this.productRepository = productRepository;
     this.tagService = tagService;
     this.productTagService = productTagService;
     this.categoryService = categoryService;
+    this.searchService = searchService;
   }
 
   async create({ files, ...productData }) {
@@ -69,6 +70,13 @@ class ProductService {
   async findProducts({ userId, searchType, value, limit, cursor, cursorId, orderby }) {
     if (!SORT_TYPE.includes(orderby)) {
       throw new CustomError("잘못된 정렬 형식입니다.", 400);
+    }
+
+    // 검색어가 있으면 검색 로그 저장 (상점별 조회가 아닌 경우에만)
+    if (value && !userId && this.searchService) {
+      this.searchService
+        .saveSearchLog(value, null)
+        .catch((err) => console.error("검색 로그 저장 실패:", err));
     }
 
     if (userId || searchType) {
@@ -151,19 +159,19 @@ class ProductService {
       if (keys.length > 0) {
         const hasInvalidKey = keys.some((key) => !PRODUCT_COLUMNS.includes(key));
 
-        if (hasInvalidKey) throw new CustomError("수정할 데이터가 올바르지 않습니다;", 400);
+        if (hasInvalidKey) throw new CustomError("수정할 데이터가 올바르지 않습니다.", 400);
 
         const setClause = keys.map((key) => `${key} = ?`).join(", ");
         const values = keys.map((key) => productData[key]);
 
-        const result = await this.productRepository.editProduct(
+        const updateResult = await this.productRepository.editProduct(
           productId,
           setClause,
           values,
           connection
         );
 
-        if (!result || result.affectedRows < 1) {
+        if (!updateResult || updateResult.affectedRows < 1) {
           throw new CustomError("상품 정보 수정에 실패하였습니다.");
         }
       }
@@ -194,7 +202,7 @@ class ProductService {
         }
       }
 
-      return result;
+      return productId;
     });
   }
 
@@ -245,6 +253,13 @@ class ProductService {
       .trim()
       .split(" ")
       .filter((tag) => tag);
+  }
+
+  async findTrendingProducts() {
+    const products = await this.productRepository.findTrendingProducts();
+
+    // popularityScore를 그대로 유지하여 프론트엔드에서 활용 가능
+    return { products };
   }
 }
 
