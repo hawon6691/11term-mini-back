@@ -40,7 +40,7 @@ router.post(
 );
 
 router.patch(
-  "/",
+  "/:reviewId",
   authGuard(),
   upload.array("images", 3),
   updateReviewValidator,
@@ -48,6 +48,12 @@ router.patch(
   reviewController.updateReview
 );
 
-router.delete("/", authGuard(), deleteReviewValidator, validate, reviewController.deleteReview);
+router.delete(
+  "/:reviewId",
+  authGuard(),
+  deleteReviewValidator,
+  validate,
+  reviewController.deleteReview
+);
 
 module.exports = router;

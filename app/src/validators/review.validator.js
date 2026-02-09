@@ -1,6 +1,6 @@
 "use strict";
 
-const { body, query } = require("express-validator");
+const { body, query, param } = require("express-validator");
 
 exports.createReviewValidator = [
   body("sellerId")
@@ -64,7 +64,7 @@ exports.getSellerReviewsValidator = [
 ];
 
 exports.updateReviewValidator = [
-  query("reviewId")
+  param("reviewId")
     .notEmpty()
     .withMessage("후기 ID는 필수입니다.")
     .isInt({ min: 1 })
@@ -109,7 +109,7 @@ exports.updateReviewValidator = [
 ];
 
 exports.deleteReviewValidator = [
-  query("reviewId")
+  param("reviewId")
     .notEmpty()
     .withMessage("후기 ID는 필수입니다.")
     .isInt({ min: 1 })

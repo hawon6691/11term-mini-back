@@ -80,22 +80,7 @@ class ReviewService {
 
     const reviews = await this.reviewRepository.findReviewsBySellerId(sellerId, limit);
 
-    const reviewsWithDetails = await Promise.all(
-      reviews.map(async (review) => {
-        const [tags, images] = await Promise.all([
-          this.reviewRepository.findReviewTags(review.id),
-          this.reviewRepository.findReviewImages(review.id),
-        ]);
-
-        return {
-          ...review,
-          tags: tags.map((t) => t.tagName),
-          images: images.map((i) => i.imageUrl),
-        };
-      })
-    );
-
-    return reviewsWithDetails;
+    return reviews;
   }
 
   async updateReview(userId, reviewId, updateData) {
@@ -144,6 +129,9 @@ class ReviewService {
       if (review.userId !== userId) {
         throw new CustomError("본인이 작성한 후기만 삭제할 수 있습니다.", 403);
       }
+
+      await this.reviewRepository.deleteReviewTags(reviewId, connection);
+      await this.reviewRepository.deleteReviewImages(reviewId, connection);
 
       const result = await this.reviewRepository.deleteReview(reviewId, connection);
 

@@ -51,7 +51,7 @@ class ReviewController {
   updateReview = async (req, res, next) => {
     try {
       const userId = req.user.id;
-      const reviewId = Number(req.query.reviewId);
+      const reviewId = Number(req.params.reviewId);
       const { rating, content, tags } = req.body;
       const files = req.files || [];
 
@@ -74,7 +74,7 @@ class ReviewController {
   deleteReview = async (req, res, next) => {
     try {
       const userId = req.user.id;
-      const reviewId = Number(req.query.reviewId);
+      const reviewId = Number(req.params.reviewId);
 
       await this.reviewService.deleteReview(userId, reviewId);
 

@@ -69,7 +69,19 @@ class ReviewRepository {
         r.rating,
         r.content,
         r.created_at AS createdAt,
-        u.nickname AS userName
+        u.nickname AS userName,
+        IFNULL(
+          (SELECT JSON_ARRAYAGG(tag_name)
+           FROM review_tags
+           WHERE review_id = r.id),
+          JSON_ARRAY()
+        ) AS tags,
+        IFNULL(
+          (SELECT JSON_ARRAYAGG(image_url)
+           FROM review_images
+           WHERE review_id = r.id),
+          JSON_ARRAY()
+        ) AS images
       FROM reviews r
       JOIN users u ON r.user_id = u.id
       WHERE r.seller_id = ?
@@ -78,7 +90,11 @@ class ReviewRepository {
     `;
 
     const rows = await execute(query, [sellerId, limit]);
-    return rows || [];
+    return (rows || []).map((row) => ({
+      ...row,
+      tags: typeof row.tags === "string" ? JSON.parse(row.tags) : row.tags,
+      images: typeof row.images === "string" ? JSON.parse(row.images) : row.images,
+    }));
   }
 
   async findReviewTags(reviewId) {
