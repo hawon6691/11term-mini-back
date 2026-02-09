@@ -1,6 +1,5 @@
 "use strict";
 
-const CustomError = require("../utils/customError");
 const { execute } = require("./../config/db");
 
 const QUERY = {

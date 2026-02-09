@@ -143,19 +143,19 @@ class ProductService {
       if (keys.length > 0) {
         const hasInvalidKey = keys.some((key) => !PRODUCT_COLUMNS.includes(key));
 
-        if (hasInvalidKey) throw new CustomError("수정할 데이터가 올바르지 않습니다;", 400);
+        if (hasInvalidKey) throw new CustomError("수정할 데이터가 올바르지 않습니다.", 400);
 
         const setClause = keys.map((key) => `${key} = ?`).join(", ");
         const values = keys.map((key) => productData[key]);
 
-        const result = await this.productRepository.editProduct(
+        const updateResult = await this.productRepository.editProduct(
           productId,
           setClause,
           values,
           connection
         );
 
-        if (!result || result.affectedRows < 1) {
+        if (!updateResult || updateResult.affectedRows < 1) {
           throw new CustomError("상품 정보 수정에 실패하였습니다.");
         }
       }
@@ -186,7 +186,7 @@ class ProductService {
         }
       }
 
-      return result;
+      return productId;
     });
   }
 
