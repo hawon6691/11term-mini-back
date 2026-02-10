@@ -9,25 +9,53 @@ class TalksGateway {
   constructor(io, talksService) {
     this.io = io;
     this.talksService = talksService;
+    this.connectedUsers = new Map();
     this.setupRedisAdapter();
   }
 
   async setupRedisAdapter() {
+    const useRedis = process.env.USE_REDIS === "true";
+
+    if (!useRedis) {
+      console.log("Redis Adapter disabled. Running in single-server mode.");
+      return;
+    }
+
+    let pubClient;
+    let subClient;
+
     try {
-      const pubClient = createClient({
+      pubClient = createClient({
         host: process.env.REDIS_HOST || "localhost",
         port: process.env.REDIS_PORT || 6379,
+        socket: {
+          connectTimeout: 3000,
+          reconnectStrategy: false,
+        },
       });
 
-      const subClient = pubClient.duplicate();
+      subClient = pubClient.duplicate();
+
+      pubClient.on("error", () => {});
+      subClient.on("error", () => {});
 
       await Promise.all([pubClient.connect(), subClient.connect()]);
 
       this.io.adapter(createAdapter(pubClient, subClient));
 
-      console.log("Redis Adapter initialized for Socket.io");
+      console.log("✅ Redis Adapter initialized for Socket.io");
     } catch (error) {
-      console.error("Failed to setup Redis Adapter:", error);
+      console.warn("⚠️  Redis connection failed. Running in single-server mode.");
+      console.warn("   To enable Redis: set USE_REDIS=true and ensure Redis server is running.");
+
+      try {
+        if (pubClient && pubClient.isOpen) {
+          await pubClient.quit();
+        }
+        if (subClient && subClient.isOpen) {
+          await subClient.quit();
+        }
+      } catch (cleanupError) {}
     }
   }
 
