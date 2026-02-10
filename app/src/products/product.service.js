@@ -67,7 +67,7 @@ class ProductService {
     });
   }
 
-  async findProducts({ userId, searchType, value, limit, cursor, cursorId, orderby }) {
+  async findProducts({ userId, searchType, value, limit, cursor, cursorId, offset, orderby }) {
     if (!SORT_TYPE.includes(orderby)) {
       throw new CustomError("잘못된 정렬 형식입니다.", 400);
     }
@@ -88,8 +88,7 @@ class ProductService {
         searchType,
         value,
         limit,
-        cursor,
-        cursorId,
+        offset,
         orderby
       );
     }
@@ -97,7 +96,7 @@ class ProductService {
     return await this.productRepository.findAllProducts(limit, cursor, cursorId, orderby);
   }
 
-  async findProductById(productId) {
+  async findProductById(productId, increseViewCnt = true) {
     const rawProduct = await this.productRepository.findProductById(productId);
 
     if (!rawProduct) {
@@ -131,7 +130,9 @@ class ProductService {
       category.category2 = categoryData;
     }
 
-    await this.productRepository.increaseViewCount(productId);
+    if (increseViewCnt) {
+      await this.productRepository.increaseViewCount(productId);
+    }
 
     return {
       ...product,
@@ -227,7 +228,7 @@ class ProductService {
       throw new CustomError("수정할 권한이 없는 사용자입니다.", 403);
     }
 
-    if (!Number.IsInteger(status) || ![0, 1, 2].includes(status)) {
+    if (!Number.isInteger(status) || ![0, 1, 2].includes(status)) {
       throw new CustomError("올바르지 않은 상품 상태 입니다.", 400);
     }
 
@@ -241,7 +242,7 @@ class ProductService {
   }
 
   async #validateProductOwner(productId, userId) {
-    const product = await this.findProductById(productId);
+    const product = await this.findProductById(productId, false);
 
     return product.userId === userId;
   }

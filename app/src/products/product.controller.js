@@ -36,6 +36,7 @@ class ProductController {
         limit = 50,
         cursor,
         cursorId,
+        offset = 0,
         orderby = "latest",
       } = req.query;
 
@@ -46,6 +47,7 @@ class ProductController {
         limit: Number(limit),
         cursor,
         cursorId: cursorId ? Number(cursorId) : null,
+        offset: Number(offset),
         orderby,
       });
 

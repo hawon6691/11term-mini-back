@@ -5,9 +5,10 @@ const { PRODUCT_STATUS, TRENDING_CONFIG } = require("./product.constants");
 
 const QUERY = {
   FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, p.is_shipping_cost, p.sale_status, i.image_url
-    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1 WHERE deleted_at IS NULL`,
+    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1`,
   CURSOR_QUERY: "AND (p.created_at < ? OR (p.created_at = ? AND p.id < ?))",
   LIMIT_QUERY: "LIMIT ?",
+  WITHOUT_DELETED_QUERY: "p.deleted_at IS NULL",
 };
 
 const ORDER_BY_QUERY = {
@@ -68,7 +69,7 @@ class ProductRepository {
 
   async findAllProducts(limit, cursor, cursorId, orderby) {
     const params = [];
-    let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
+    let query = `${QUERY.FIND_ALL_PRODUCTS_QUERY} WHERE ${QUERY.WITHOUT_DELETED_QUERY}`;
 
     if (cursor && cursorId) {
       query += ` ${QUERY.CURSOR_QUERY}`;
@@ -97,41 +98,42 @@ class ProductRepository {
     return rows || null;
   }
 
-  async findProducts(userId, searchType, value, limit, cursor, cursorId, orderby) {
+  async findProducts(userId, searchType, value, limit, offset, orderby) {
     const params = [];
     let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
 
+    const wheres = [];
     if (userId) {
-      query += ` AND p.user_id = ?`;
+      wheres.push("p.user_id = ?");
       params.push(userId);
     } else {
       if (searchType === "tag") {
-        query += ` JOIN product_tags pt ON pt.product_id = p.id
-        JOIN tags t ON t.id = pt.tag_id
-        WHERE t.name = ?`;
+        query += ` JOIN product_tags pt ON pt.product_id = p.id JOIN tags t ON t.id = pt.tag_id`;
+        wheres.push("t.name = ?");
         params.push(value);
       } else {
-        query += ` AND p.title LIKE ?`;
+        wheres.push("p.title LIKE ?");
         params.push(`%${value}%`);
       }
     }
 
-    if (cursor && cursorId) {
-      query += ` ${QUERY.CURSOR_QUERY}`;
-
-      params.push(cursor, cursor, cursorId);
+    wheres.push(QUERY.WITHOUT_DELETED_QUERY);
+    if (wheres.length > 0) {
+      query += ` WHERE ${wheres.join(" AND ")} `;
     }
 
-    query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY}`;
-    params.push(limit);
+    query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY} OFFSET ?`;
+    params.push(limit + 1, offset);
 
     const rows = await execute(query, params);
 
+    const hasNext = rows.length > Number(limit);
+    const products = hasNext ? rows.slice(0, Number(limit)) : rows;
+
     return {
-      products: rows,
-      nextCursor: rows.length
-        ? { cursor: rows[rows.length - 1].createdAt, cursorId: rows[rows.length - 1].productId }
-        : null,
+      products,
+      nextOffset: hasNext ? Number(offset) + Number(limit) : null,
+      hasNext,
     };
   }
 
