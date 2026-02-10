@@ -106,15 +106,19 @@ class ReviewService {
         throw new CustomError("후기 수정에 실패했습니다.");
       }
 
-      if (tags && tags.length > 0) {
+      if (tags !== undefined) {
         await this.reviewRepository.deleteReviewTags(reviewId, connection);
-        await this.reviewRepository.createReviewTags(reviewId, tags, connection);
+        if (tags.length > 0) {
+          await this.reviewRepository.createReviewTags(reviewId, tags, connection);
+        }
       }
 
-      if (files && files.length > 0) {
+      if (files !== undefined) {
         await this.reviewRepository.deleteReviewImages(reviewId, connection);
-        const imageUrls = files.map((file) => buildImagePath(file.filename));
-        await this.reviewRepository.saveReviewImages(reviewId, imageUrls, connection);
+        if (files.length > 0) {
+          const imageUrls = files.map((file) => buildImagePath(file.filename));
+          await this.reviewRepository.saveReviewImages(reviewId, imageUrls, connection);
+        }
       }
     });
   }

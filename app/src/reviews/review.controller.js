@@ -11,13 +11,23 @@ class ReviewController {
       const { sellerId, rating, content, tags, productId } = req.body;
       const files = req.files || [];
 
+      let parsedTags = [];
+      if (tags) {
+        try {
+          parsedTags = JSON.parse(tags);
+        } catch (error) {
+          const CustomError = require("../utils/customError");
+          throw new CustomError("태그 형식이 올바르지 않습니다.", 400);
+        }
+      }
+
       const reviewId = await this.reviewService.createReview({
         userId,
         sellerId: Number(sellerId),
         productId: Number(productId),
         rating: Number(rating),
         content,
-        tags: tags ? JSON.parse(tags) : [],
+        tags: parsedTags,
         files,
       });
 
@@ -55,10 +65,20 @@ class ReviewController {
       const { rating, content, tags } = req.body;
       const files = req.files || [];
 
+      let parsedTags = [];
+      if (tags) {
+        try {
+          parsedTags = JSON.parse(tags);
+        } catch (error) {
+          const CustomError = require("../utils/customError");
+          throw new CustomError("태그 형식이 올바르지 않습니다.", 400);
+        }
+      }
+
       await this.reviewService.updateReview(userId, reviewId, {
         rating: Number(rating),
         content,
-        tags: tags ? JSON.parse(tags) : [],
+        tags: parsedTags,
         files,
       });
 

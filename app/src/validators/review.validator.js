@@ -52,6 +52,14 @@ exports.createReviewValidator = [
     .isInt({ min: 1 })
     .withMessage("유효한 상품 ID가 아닙니다.")
     .toInt(),
+
+  body().custom((value, { req }) => {
+    const files = req.files || [];
+    if (files.length > 3) {
+      throw new Error("이미지는 최대 3장까지 업로드 가능합니다.");
+    }
+    return true;
+  }),
 ];
 
 exports.getSellerReviewsValidator = [
@@ -106,6 +114,14 @@ exports.updateReviewValidator = [
         throw new Error(error.message);
       }
     }),
+
+  body().custom((value, { req }) => {
+    const files = req.files || [];
+    if (files.length > 3) {
+      throw new Error("이미지는 최대 3장까지 업로드 가능합니다.");
+    }
+    return true;
+  }),
 ];
 
 exports.deleteReviewValidator = [
