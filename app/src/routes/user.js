@@ -8,15 +8,26 @@ const authGuard = require("../auth/guard/auth.guard");
 const {
   updateNicknameValidator,
   updateSummaryValidator,
+  updateProfileValidator,
   followValidator,
 } = require("../validators/user.validator");
 const validate = require("../middleware/validate");
+const { uploadProfileImage } = require("../middleware/upload.middleware");
 
 const router = express.Router();
 
 const userRepository = new UserRepository();
 const userService = new UserService(userRepository);
 const userController = new UserController(userService);
+
+router.patch(
+  "/update/users/me",
+  authGuard(),
+  uploadProfileImage,
+  updateProfileValidator,
+  validate,
+  userController.updateProfile
+);
 
 router.patch(
   "/nickname",

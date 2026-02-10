@@ -22,6 +22,45 @@ exports.updateSummeryValidator = [
     .withMessage("소개글은 1000자를 초과할 수 없습니다."),
 ];
 
+exports.updateProfileValidator = [
+  body()
+    .custom((_value, { req }) => {
+      const hasNickname = req.body.nickname !== undefined;
+      const hasSummary = req.body.summary !== undefined;
+      const hasImage = req.file !== undefined;
+      const hasDeleteImage = req.body.deleteImage !== undefined;
+
+      if (!hasNickname && !hasSummary && !hasImage && !hasDeleteImage) {
+        throw new Error("수정할 정보를 입력해주세요.");
+      }
+
+      return true;
+    }),
+  body("nickname")
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage("상점명을 입력해주세요.")
+    .isLength({ min: 2 })
+    .withMessage("상점명은 최소 2자 이상이어야 합니다.")
+    .isLength({ max: 10 })
+    .withMessage("상점명은 최대 10자까지 가능합니다.")
+    .matches(/^[가-힣a-zA-Z0-9]+$/)
+    .withMessage("상점명은 한글, 영문, 숫자만 사용 가능합니다."),
+  body("summary")
+    .optional({ nullable: true })
+    .isLength({ max: 1000 })
+    .withMessage("소개글은 1000자를 초과할 수 없습니다."),
+  body("deleteImage")
+    .optional()
+    .custom((value) => {
+      if (value !== "true" && value !== true && value !== "false" && value !== false) {
+        throw new Error("deleteImage는 불리언 값이어야 합니다.");
+      }
+      return true;
+    }),
+];
+
 exports.followValidator = [
   body("targetId")
     .notEmpty()
