@@ -3,6 +3,12 @@
 const transaction = require("../config/transaction");
 const CustomError = require("../utils/customError");
 const { nanoid } = require("nanoid");
+const {
+  MESSAGE_TYPES,
+  VISIBILITY,
+  createProductInfoExtra,
+  createInitialMessageContent,
+} = require("../constants/messageTypes");
 
 class TalksService {
   constructor(talksRepository, productRepository) {
@@ -34,15 +40,10 @@ class TalksService {
         id: initialMessageId,
         roomId: roomId,
         senderId: userId,
-        content: `${product.title}에 대한 이야기를 시작해보세요.`,
-        messageType: 100, // 상품 정보 메시지
-        extra: JSON.stringify({
-          type: "product",
-          productId: productId,
-          title: product.title,
-          price: product.price,
-        }),
-        visibility: "SENDER_ONLY", // 구매자에게만 보임
+        content: createInitialMessageContent(product),
+        messageType: MESSAGE_TYPES.PRODUCT_INFO,
+        extra: createProductInfoExtra(productId, product.title, product.price),
+        visibility: VISIBILITY.SENDER_ONLY,
         createdAt: new Date(),
       };
 
@@ -114,9 +115,9 @@ class TalksService {
         roomId: roomId,
         senderId: userId,
         content: messageData.content,
-        messageType: messageData.messageType || 1, // 기본값: 텍스트
+        messageType: messageData.messageType || MESSAGE_TYPES.TEXT,
         extra: messageData.extra || "{}",
-        visibility: messageData.visibility || "ALL",
+        visibility: messageData.visibility || VISIBILITY.ALL,
         createdAt: new Date(),
       };
 

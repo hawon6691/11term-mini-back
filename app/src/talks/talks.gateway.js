@@ -2,12 +2,33 @@
 
 const jwt = require("jsonwebtoken");
 const { accessSecret: JWT_SECRET } = require("../config/jwt");
+const { createAdapter } = require("@socket.io/redis-adapter");
+const { createClient } = require("redis");
 
 class TalksGateway {
   constructor(io, talksService) {
     this.io = io;
     this.talksService = talksService;
-    this.connectedUsers = new Map(); // userId -> socketId 매핑
+    this.setupRedisAdapter();
+  }
+
+  async setupRedisAdapter() {
+    try {
+      const pubClient = createClient({
+        host: process.env.REDIS_HOST || "localhost",
+        port: process.env.REDIS_PORT || 6379,
+      });
+
+      const subClient = pubClient.duplicate();
+
+      await Promise.all([pubClient.connect(), subClient.connect()]);
+
+      this.io.adapter(createAdapter(pubClient, subClient));
+
+      console.log("Redis Adapter initialized for Socket.io");
+    } catch (error) {
+      console.error("Failed to setup Redis Adapter:", error);
+    }
   }
 
   initialize() {
@@ -41,10 +62,24 @@ class TalksGateway {
 
       const decoded = jwt.verify(token, JWT_SECRET);
       socket.userId = decoded.id;
+      socket.token = token;
       next();
     } catch (error) {
       console.error("Socket authentication error:", error);
       next(new Error("Authentication error"));
+    }
+  }
+
+  verifyTokenAndGetUserId(socket) {
+    try {
+      if (!socket.token) {
+        return null;
+      }
+      const decoded = jwt.verify(socket.token, JWT_SECRET);
+      return decoded.id;
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      return null;
     }
   }
 
@@ -72,7 +107,15 @@ class TalksGateway {
 
   async handleSendMessage(socket, data) {
     try {
-      const userId = socket.userId;
+      const userId = this.verifyTokenAndGetUserId(socket);
+      if (!userId) {
+        socket.emit("error", {
+          message: "인증 토큰이 만료되었습니다. 다시 로그인해주세요.",
+        });
+        socket.disconnect();
+        return;
+      }
+
       const { roomId, content, messageType, extra } = data;
 
       const message = await this.talksService.sendMessage(userId, roomId, {
@@ -95,7 +138,15 @@ class TalksGateway {
 
   async handleReadMessages(socket, data) {
     try {
-      const userId = socket.userId;
+      const userId = this.verifyTokenAndGetUserId(socket);
+      if (!userId) {
+        socket.emit("error", {
+          message: "인증 토큰이 만료되었습니다. 다시 로그인해주세요.",
+        });
+        socket.disconnect();
+        return;
+      }
+
       const { roomId } = data;
 
       await this.talksService.markMessagesAsRead(userId, roomId);
