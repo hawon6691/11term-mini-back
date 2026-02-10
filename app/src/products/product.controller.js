@@ -48,6 +48,7 @@ class ProductController {
         limit = 50,
         cursor,
         cursorId,
+        offset = 0,
         orderby = "latest",
       } = req.query;
 
@@ -58,6 +59,7 @@ class ProductController {
         limit: Number(limit),
         cursor,
         cursorId: cursorId ? Number(cursorId) : null,
+        offset: Number(offset),
         orderby,
       });
 
@@ -123,6 +125,21 @@ class ProductController {
       await this.productService.editProductStatus(productId, Number(status), userId);
 
       res.status(200).json({ message: "상품 상태 변경에 성공하였습니다." });
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  };
+
+  findTrendingProducts = async (req, res, next) => {
+    try {
+      const data = await this.productService.findTrendingProducts();
+      const products = data?.products || [];
+
+      res.status(200).json({
+        data: products,
+        totalCnt: products.length,
+      });
     } catch (error) {
       console.error(error);
       next(error);

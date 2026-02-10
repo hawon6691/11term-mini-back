@@ -1,15 +1,14 @@
 "use strict";
 
-const CustomError = require("../utils/customError");
 const { execute } = require("./../config/db");
+const { PRODUCT_STATUS, TRENDING_CONFIG } = require("./product.constants");
 
 const QUERY = {
   FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, p.is_shipping_cost, p.sale_status, i.image_url
-    FROM products p 
-    LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1 
-    WHERE deleted_at IS NULL`,
+    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1`,
   CURSOR_QUERY: "AND (p.created_at < ? OR (p.created_at = ? AND p.id < ?))",
   LIMIT_QUERY: "LIMIT ?",
+  WITHOUT_DELETED_QUERY: "p.deleted_at IS NULL",
 };
 
 const ORDER_BY_QUERY = {
@@ -18,12 +17,13 @@ const ORDER_BY_QUERY = {
   latest: "ORDER BY p.created_at DESC, p.id DESC",
   price_desc: "ORDER BY p.price DESC, p.id DESC",
   price_asc: "ORDER BY p.price ASC, p.id ASC",
+  ORDER_BY_AND_LIMIT_QUERY: "ORDER BY p.created_at DESC, p.id DESC LIMIT ?",
 };
 
 class ProductRepository {
   async create(productInfo, connection) {
     const query = `INSERT INTO
-      products(user_id, title, description, product_condition, price, is_shipping_cost, shipping_cost, is_direct_deal, direct_deal_location, category_id) 
+      products(user_id, title, description, product_condition, price, is_shipping_cost, shipping_cost, is_direct_deal, direct_deal_location, category_id)
       VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`;
 
     const [rows] = await connection.query(query, [
@@ -70,7 +70,7 @@ class ProductRepository {
 
   async findAllProducts(limit, cursor, cursorId, orderby) {
     const params = [];
-    let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
+    let query = `${QUERY.FIND_ALL_PRODUCTS_QUERY} WHERE ${QUERY.WITHOUT_DELETED_QUERY}`;
 
     if (cursor && cursorId) {
       query += ` ${QUERY.CURSOR_QUERY}`;
@@ -109,8 +109,9 @@ class ProductRepository {
     const params = [];
     let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
 
+    const wheres = [];
     if (userId) {
-      query += ` AND p.user_id = ?`;
+      wheres.push("p.user_id = ?");
       params.push(userId);
     } else {
       const keywords = value.trim().split(" ").filter(Boolean);
@@ -120,68 +121,32 @@ class ProductRepository {
       }
 
       if (searchType === "tag") {
-        const placeholders = keywords.map(() => "?").join(", ");
-
-        query = `
-        SELECT
-          p.id AS product_id,
-          p.title,
-          p.price,
-          p.created_at,
-          p.is_shipping_cost,
-          p.sale_status,
-          i.image_url,
-          tm.tag_score
-        FROM products p
-        LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1
-        JOIN (
-          SELECT
-            pt.product_id,
-            COUNT(DISTINCT t.name) AS tag_score
-          FROM product_tags pt
-          JOIN tags t ON t.id = pt.tag_id
-          WHERE t.name IN (${placeholders})
-          GROUP BY pt.product_id
-        ) tm ON tm.product_id = p.id
-        WHERE p.deleted_at IS NULL
-      `;
-
-        params.push(...keywords);
+        query += ` JOIN product_tags pt ON pt.product_id = p.id JOIN tags t ON t.id = pt.tag_id`;
+        wheres.push("t.name = ?");
+        params.push(value);
       } else {
-        for (const keyword of keywords) {
-          query += ` AND p.title LIKE ?`;
-          params.push(`%${keyword}%`);
-        }
+        wheres.push("p.title LIKE ?");
+        params.push(`%${value}%`);
       }
     }
 
-    if (cursor && cursorId) {
-      query += ` ${QUERY.CURSOR_QUERY}`;
-      params.push(cursor, cursor, cursorId);
+    wheres.push(QUERY.WITHOUT_DELETED_QUERY);
+    if (wheres.length > 0) {
+      query += ` WHERE ${wheres.join(" AND ")} `;
     }
 
-    if (orderby === "accuracy") {
-      if (searchType === "tag") {
-        query += ` ORDER BY tm.tag_score DESC, p.created_at DESC, p.id DESC ${QUERY.LIMIT_QUERY}`;
-      } else {
-        const keywords = value.trim().split(" ").filter(Boolean);
-        const scoreExpr = keywords.map(() => `(p.title LIKE ?)`).join(" + ");
-        query += ` ORDER BY (${scoreExpr}) DESC, p.created_at DESC, p.id DESC ${QUERY.LIMIT_QUERY}`;
-        params.push(...keywords.map((k) => `%${k}%`));
-      }
-    } else {
-      query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY}`;
-    }
-
-    params.push(limit);
+    query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY} OFFSET ?`;
+    params.push(limit + 1, offset);
 
     const rows = await execute(query, params);
 
+    const hasNext = rows.length > Number(limit);
+    const products = hasNext ? rows.slice(0, Number(limit)) : rows;
+
     return {
-      products: rows,
-      nextCursor: rows.length
-        ? { cursor: rows[rows.length - 1].createdAt, cursorId: rows[rows.length - 1].productId }
-        : null,
+      products,
+      nextOffset: hasNext ? Number(offset) + Number(limit) : null,
+      hasNext,
     };
   }
 
@@ -215,6 +180,47 @@ class ProductRepository {
     const rows = await execute(query, [productId]);
 
     return rows || null;
+  }
+
+  async findTrendingProducts() {
+    const query = `
+      SELECT
+        p.id,
+        p.title,
+        p.price,
+        p.view_cnt AS viewCnt,
+        p.created_at AS createdAt,
+        (
+          SELECT pi.image_url
+          FROM product_images pi
+          WHERE pi.product_id = p.id AND pi.is_thumbnail = 1
+          ORDER BY pi.id ASC
+          LIMIT 1
+        ) AS imageUrl,
+        COALESCE(lc.cnt, 0) AS likedCnt,
+        (p.view_cnt + COALESCE(lc.cnt, 0) * ?) AS popularityScore
+      FROM products p
+      LEFT JOIN (
+        SELECT product_id, COUNT(*) AS cnt
+        FROM liked_product
+        GROUP BY product_id
+      ) AS lc ON p.id = lc.product_id
+      WHERE p.sale_status = ?
+        AND p.deleted_at IS NULL
+        AND p.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+      ORDER BY popularityScore DESC
+      LIMIT ?
+    `;
+
+    const params = [
+      TRENDING_CONFIG.LIKE_WEIGHT,
+      PRODUCT_STATUS.ON_SALE,
+      TRENDING_CONFIG.DAYS_LIMIT,
+      TRENDING_CONFIG.RESULT_LIMIT,
+    ];
+
+    const rows = await execute(query, params);
+    return rows || [];
   }
 }
 

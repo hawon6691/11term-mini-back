@@ -20,11 +20,12 @@ const PRODUCT_COLUMNS = [
 const SORT_TYPE = ["accuracy", "popular", "latest", "price_asc", "price_desc"];
 
 class ProductService {
-  constructor(productRepository, tagService, productTagService, categoryService) {
+  constructor(productRepository, tagService, productTagService, categoryService, searchService) {
     this.productRepository = productRepository;
     this.tagService = tagService;
     this.productTagService = productTagService;
     this.categoryService = categoryService;
+    this.searchService = searchService;
   }
 
   async create({ images = [], tags = [], ...productData }) {
@@ -66,9 +67,16 @@ class ProductService {
     });
   }
 
-  async findProducts({ userId, searchType, value, limit, cursor, cursorId, orderby }) {
+  async findProducts({ userId, searchType, value, limit, cursor, cursorId, offset, orderby }) {
     if (!SORT_TYPE.includes(orderby)) {
       throw new CustomError("잘못된 정렬 형식입니다.", 400);
+    }
+
+    // 검색어가 있으면 검색 로그 저장 (상점별 조회가 아닌 경우에만)
+    if (value && !userId && this.searchService) {
+      this.searchService
+        .saveSearchLog(value, null)
+        .catch((err) => console.error("검색 로그 저장 실패:", err));
     }
 
     if (userId || searchType) {
@@ -82,8 +90,7 @@ class ProductService {
         searchType,
         value,
         limit,
-        cursor,
-        cursorId,
+        offset,
         orderby
       );
     }
@@ -91,7 +98,7 @@ class ProductService {
     return await this.productRepository.findAllProducts(limit, cursor, cursorId, orderby);
   }
 
-  async findProductById(productId) {
+  async findProductById(productId, increseViewCnt = true) {
     const rawProduct = await this.productRepository.findProductById(productId);
 
     if (!rawProduct) {
@@ -125,7 +132,9 @@ class ProductService {
       category.category2 = categoryData;
     }
 
-    await this.productRepository.increaseViewCount(productId);
+    if (increseViewCnt) {
+      await this.productRepository.increaseViewCount(productId);
+    }
 
     return {
       ...product,
@@ -153,19 +162,19 @@ class ProductService {
       if (keys.length > 0) {
         const hasInvalidKey = keys.some((key) => !PRODUCT_COLUMNS.includes(key));
 
-        if (hasInvalidKey) throw new CustomError("수정할 데이터가 올바르지 않습니다;", 400);
+        if (hasInvalidKey) throw new CustomError("수정할 데이터가 올바르지 않습니다.", 400);
 
         const setClause = keys.map((key) => `${key} = ?`).join(", ");
         const values = keys.map((key) => productData[key]);
 
-        const result = await this.productRepository.editProduct(
+        const updateResult = await this.productRepository.editProduct(
           productId,
           setClause,
           values,
           connection
         );
 
-        if (!result || result.affectedRows < 1) {
+        if (!updateResult || updateResult.affectedRows < 1) {
           throw new CustomError("상품 정보 수정에 실패하였습니다.");
         }
       }
@@ -196,7 +205,7 @@ class ProductService {
         }
       }
 
-      return result;
+      return productId;
     });
   }
 
@@ -221,7 +230,7 @@ class ProductService {
       throw new CustomError("수정할 권한이 없는 사용자입니다.", 403);
     }
 
-    if (!Number.IsInteger(status) || ![0, 1, 2].includes(status)) {
+    if (!Number.isInteger(status) || ![0, 1, 2].includes(status)) {
       throw new CustomError("올바르지 않은 상품 상태 입니다.", 400);
     }
 
@@ -235,7 +244,7 @@ class ProductService {
   }
 
   async #validateProductOwner(productId, userId) {
-    const product = await this.findProductById(productId);
+    const product = await this.findProductById(productId, false);
 
     return product.userId === userId;
   }
@@ -247,6 +256,13 @@ class ProductService {
       .trim()
       .split(" ")
       .filter((tag) => tag);
+  }
+
+  async findTrendingProducts() {
+    const products = await this.productRepository.findTrendingProducts();
+
+    // popularityScore를 그대로 유지하여 프론트엔드에서 활용 가능
+    return { products };
   }
 }
 
