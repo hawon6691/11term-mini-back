@@ -17,6 +17,7 @@ const PRODUCT_COLUMNS = [
   "tags",
   "images",
 ];
+const SORT_TYPE = ["popular", "latest", "price_asc", "price_desc"];
 
 class ProductService {
   constructor(productRepository, tagService, productTagService, categoryService, searchService) {
@@ -66,7 +67,11 @@ class ProductService {
     });
   }
 
-  async findProducts({ userId, searchType, value, limit, cursor, cursorId }) {
+  async findProducts({ userId, searchType, value, limit, cursor, cursorId, offset, orderby }) {
+    if (!SORT_TYPE.includes(orderby)) {
+      throw new CustomError("잘못된 정렬 형식입니다.", 400);
+    }
+
     // 검색어가 있으면 검색 로그 저장 (상점별 조회가 아닌 경우에만)
     if (value && !userId && this.searchService) {
       this.searchService
@@ -83,15 +88,15 @@ class ProductService {
         searchType,
         value,
         limit,
-        cursor,
-        cursorId
+        offset,
+        orderby
       );
     }
 
-    return await this.productRepository.findAllProducts(limit, cursor, cursorId);
+    return await this.productRepository.findAllProducts(limit, cursor, cursorId, orderby);
   }
 
-  async findProductById(productId) {
+  async findProductById(productId, increseViewCnt = true) {
     const rawProduct = await this.productRepository.findProductById(productId);
 
     if (!rawProduct) {
@@ -123,6 +128,10 @@ class ProductService {
 
       category.category1 = parentCategory;
       category.category2 = categoryData;
+    }
+
+    if (increseViewCnt) {
+      await this.productRepository.increaseViewCount(productId);
     }
 
     return {
@@ -219,7 +228,7 @@ class ProductService {
       throw new CustomError("수정할 권한이 없는 사용자입니다.", 403);
     }
 
-    if (!Number.IsInteger(status) || ![0, 1, 2].includes(status)) {
+    if (!Number.isInteger(status) || ![0, 1, 2].includes(status)) {
       throw new CustomError("올바르지 않은 상품 상태 입니다.", 400);
     }
 
@@ -233,7 +242,7 @@ class ProductService {
   }
 
   async #validateProductOwner(productId, userId) {
-    const product = await this.findProductById(productId);
+    const product = await this.findProductById(productId, false);
 
     return product.userId === userId;
   }

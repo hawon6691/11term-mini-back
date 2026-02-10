@@ -5,8 +5,17 @@ const { PRODUCT_STATUS, TRENDING_CONFIG } = require("./product.constants");
 
 const QUERY = {
   FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, p.is_shipping_cost, p.sale_status, i.image_url
-    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1 WHERE deleted_at IS NULL`,
+    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1`,
   CURSOR_QUERY: "AND (p.created_at < ? OR (p.created_at = ? AND p.id < ?))",
+  LIMIT_QUERY: "LIMIT ?",
+  WITHOUT_DELETED_QUERY: "p.deleted_at IS NULL",
+};
+
+const ORDER_BY_QUERY = {
+  popular: "ORDER BY p.view_cnt DESC, p.id DESC",
+  latest: "ORDER BY p.created_at DESC, p.id DESC",
+  price_desc: "ORDER BY p.price DESC, p.id DESC",
+  price_asc: "ORDER BY p.price ASC, p.id ASC",
   ORDER_BY_AND_LIMIT_QUERY: "ORDER BY p.created_at DESC, p.id DESC LIMIT ?",
 };
 
@@ -58,9 +67,9 @@ class ProductRepository {
     return rows || [];
   }
 
-  async findAllProducts(limit, cursor, cursorId) {
+  async findAllProducts(limit, cursor, cursorId, orderby) {
     const params = [];
-    let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
+    let query = `${QUERY.FIND_ALL_PRODUCTS_QUERY} WHERE ${QUERY.WITHOUT_DELETED_QUERY}`;
 
     if (cursor && cursorId) {
       query += ` ${QUERY.CURSOR_QUERY}`;
@@ -68,7 +77,7 @@ class ProductRepository {
       params.push(cursor, cursor, cursorId);
     }
 
-    query += ` ${QUERY.ORDER_BY_AND_LIMIT_QUERY}`;
+    query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY}`;
     params.push(limit);
 
     const rows = await execute(query, params);
@@ -89,41 +98,42 @@ class ProductRepository {
     return rows || null;
   }
 
-  async findProducts(userId, searchType, value, limit, cursor, cursorId) {
+  async findProducts(userId, searchType, value, limit, offset, orderby) {
     const params = [];
     let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
 
+    const wheres = [];
     if (userId) {
-      query += ` AND p.user_id = ?`;
+      wheres.push("p.user_id = ?");
       params.push(userId);
     } else {
       if (searchType === "tag") {
-        query += ` JOIN product_tags pt ON pt.product_id = p.id
-        JOIN tags t ON t.id = pt.tag_id
-        WHERE t.name = ?`;
+        query += ` JOIN product_tags pt ON pt.product_id = p.id JOIN tags t ON t.id = pt.tag_id`;
+        wheres.push("t.name = ?");
         params.push(value);
       } else {
-        query += ` AND p.title LIKE ?`;
+        wheres.push("p.title LIKE ?");
         params.push(`%${value}%`);
       }
     }
 
-    if (cursor && cursorId) {
-      query += ` ${QUERY.CURSOR_QUERY}`;
-
-      params.push(cursor, cursor, cursorId);
+    wheres.push(QUERY.WITHOUT_DELETED_QUERY);
+    if (wheres.length > 0) {
+      query += ` WHERE ${wheres.join(" AND ")} `;
     }
 
-    query += ` ${QUERY.ORDER_BY_AND_LIMIT_QUERY}`;
-    params.push(limit);
+    query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY} OFFSET ?`;
+    params.push(limit + 1, offset);
 
     const rows = await execute(query, params);
 
+    const hasNext = rows.length > Number(limit);
+    const products = hasNext ? rows.slice(0, Number(limit)) : rows;
+
     return {
-      products: rows,
-      nextCursor: rows.length
-        ? { cursor: rows[rows.length - 1].createdAt, cursorId: rows[rows.length - 1].productId }
-        : null,
+      products,
+      nextOffset: hasNext ? Number(offset) + Number(limit) : null,
+      hasNext,
     };
   }
 
@@ -147,6 +157,14 @@ class ProductRepository {
     const query = "UPDATE products SET sale_status = ? WHERE id = ?;";
 
     const rows = await execute(query, [status, productId]);
+
+    return rows || null;
+  }
+
+  async increaseViewCount(productId) {
+    const query = "UPDATE products SET view_cnt = view_cnt + 1 WHERE id = ?;";
+
+    const rows = await execute(query, [productId]);
 
     return rows || null;
   }
