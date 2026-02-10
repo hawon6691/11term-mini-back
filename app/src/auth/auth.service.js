@@ -84,7 +84,7 @@ class AuthService {
     }
 
     const resetToken = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + jwtConfig.resetPasswordTokenExpires);
 
     await this.userService.updateResetToken(user.id, resetToken, expiresAt);
     await sendPasswordResetEmail(email, resetToken);
