@@ -3,8 +3,6 @@
 const express = require("express");
 const {
   signupValidator,
-  forgotPasswordValidator,
-  verifyResetTokenValidator,
   resetPasswordValidator,
 } = require("../validators/auth.validator");
 const validate = require("../middleware/validate");
@@ -26,20 +24,8 @@ router.post("/login", authController.login);
 router.post("/logout", authGuard(), authController.logout);
 router.post("/refresh", authController.refresh);
 
-router.post(
-  "/forgot-password",
-  forgotPasswordValidator,
-  validate,
-  authController.forgotPassword
-);
-router.get(
-  "/reset-password/:token",
-  verifyResetTokenValidator,
-  validate,
-  authController.verifyResetToken
-);
 router.patch(
-  "/reset-password/:token",
+  "/reset-password",
   resetPasswordValidator,
   validate,
   authController.resetPassword

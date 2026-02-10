@@ -1,6 +1,6 @@
 "use strict";
 
-const { body, param } = require("express-validator");
+const { body } = require("express-validator");
 
 exports.signupValidator = [
   body("email").isEmail().withMessage("이메일 형식이 올바르지 않습니다.").normalizeEmail(),
@@ -14,31 +14,13 @@ exports.signupValidator = [
     .withMessage("비밀번호는 영문과 숫자를 포함해야 합니다."),
 ];
 
-exports.forgotPasswordValidator = [
+exports.resetPasswordValidator = [
   body("email")
     .exists()
     .withMessage("이메일은 필수 항목입니다.")
     .isEmail()
     .withMessage("이메일 형식이 올바르지 않습니다.")
     .normalizeEmail(),
-];
-
-exports.verifyResetTokenValidator = [
-  param("token")
-    .exists()
-    .withMessage("토큰은 필수 항목입니다.")
-    .isLength({ min: 32 })
-    .withMessage("토큰 형식이 올바르지 않습니다.")
-    .trim(),
-];
-
-exports.resetPasswordValidator = [
-  param("token")
-    .exists()
-    .withMessage("토큰은 필수 항목입니다.")
-    .isLength({ min: 32 })
-    .withMessage("토큰 형식이 올바르지 않습니다.")
-    .trim(),
 
   body("password")
     .exists()

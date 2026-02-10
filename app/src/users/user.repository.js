@@ -164,6 +164,12 @@ class UserRepository {
     return rows.affectedRows > 0;
   }
 
+  async updatePassword(userId, hashedPassword) {
+    const query = "UPDATE users SET password = ? WHERE id = ?";
+    const rows = await execute(query, [hashedPassword, userId]);
+    return rows.affectedRows > 0;
+  }
+
   async removeAllRefreshTokensByUserId(userId) {
     const query = "DELETE FROM refresh_token WHERE user_id = ?";
     const rows = await execute(query, [userId]);

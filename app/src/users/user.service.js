@@ -117,6 +117,10 @@ class UserService {
     return await this.userRepository.updatePasswordAndClearToken(userId, hashedPassword);
   }
 
+  async updatePassword(userId, hashedPassword) {
+    return await this.userRepository.updatePassword(userId, hashedPassword);
+  }
+
   async removeAllRefreshTokensByUserId(userId) {
     return await this.userRepository.removeAllRefreshTokensByUserId(userId);
   }

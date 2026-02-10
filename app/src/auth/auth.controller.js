@@ -86,40 +86,11 @@ class AuthController {
     }
   };
 
-  forgotPassword = async (req, res, next) => {
-    try {
-      const { email } = req.body;
-
-      await this.authService.forgotPassword(email);
-
-      res.status(200).json({
-        message: "비밀번호 재설정 링크가 이메일로 전송되었습니다.",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  verifyResetToken = async (req, res, next) => {
-    try {
-      const { token } = req.params;
-
-      await this.authService.verifyResetToken(token);
-
-      res.status(200).json({
-        message: "유효한 토큰입니다.",
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
-
   resetPassword = async (req, res, next) => {
     try {
-      const { token } = req.params;
-      const { password } = req.body;
+      const { email, password } = req.body;
 
-      await this.authService.resetPassword(token, password);
+      await this.authService.resetPassword(email, password);
 
       res.status(200).json({
         message: "비밀번호가 성공적으로 변경되었습니다.",
