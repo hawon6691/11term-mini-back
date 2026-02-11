@@ -2,7 +2,7 @@
 
 const transaction = require("../config/transaction");
 const CustomError = require("../utils/customError");
-const buildImagePath = require("../utils/file.util");
+const validateImagesExist = require("../utils/image.validation");
 
 const PRODUCT_COLUMNS = [
   "title",
@@ -28,7 +28,7 @@ class ProductService {
     this.searchService = searchService;
   }
 
-  async create({ files, ...productData }) {
+  async create({ images = [], tags = [], ...productData }) {
     return transaction(async (connection) => {
       const newProduct = await this.productRepository.create(productData, connection);
 
@@ -38,8 +38,8 @@ class ProductService {
 
       const productId = newProduct.insertId;
 
-      if (files?.length > 0) {
-        const images = files.map((file) => buildImagePath(file.filename));
+      if (images.length > 0) {
+        await validateImagesExist(images);
 
         const result = await this.productRepository.saveProductImage(productId, images, connection);
 
@@ -47,10 +47,10 @@ class ProductService {
           throw new CustomError("상품 이미지 저장 실패");
       }
 
-      const tags = [...new Set(this.#splitTag(productData.tags))];
+      const uniqueTags = [...new Set(this.#splitTag(tags))];
 
-      if (tags.length > 0) {
-        const createdTagsId = await this.tagService.createOrFindTags(tags, connection);
+      if (uniqueTags.length > 0) {
+        const createdTagsId = await this.tagService.createOrFindTags(uniqueTags, connection);
 
         const productTags = await this.productTagService.create(
           productId,

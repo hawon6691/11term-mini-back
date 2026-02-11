@@ -47,13 +47,13 @@ const productService = new ProductService(
 );
 const productController = new ProductController(productService);
 
+router.post("/", authGuard(), createProductValidator, validate, productController.create);
+
 router.post(
-  "/",
+  "/images",
   authGuard(),
   upload.array("images", MAX_IMAGE_COUNT),
-  createProductValidator,
-  validate,
-  productController.create
+  productController.uploadProductImages
 );
 
 router.get("/trending", productController.findTrendingProducts);
