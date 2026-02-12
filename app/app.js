@@ -14,7 +14,6 @@ app.use(cookieParser());
 require("./src/passport")(passport);
 app.use(passport.initialize());
 app.use(morgan("dev"));
-app.use("/uploads/products", express.static(`${__dirname}/src/uploads/products`));
 
 const indexRouter = require("./src/routes");
 const errorMiddleware = require("./src/middleware/error.middleware");

@@ -190,6 +190,8 @@ class ProductService {
       }
 
       if (images !== undefined) {
+        await validateImagesExist(images);
+
         await this.productRepository.deleteProductImage(productId, connection);
 
         const saveImageResult = await this.productRepository.saveProductImage(
