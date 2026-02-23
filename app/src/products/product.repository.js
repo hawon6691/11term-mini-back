@@ -102,65 +102,67 @@ class ProductRepository {
   }
 
   async findProducts(userId, searchType, value, limit, offset, orderby) {
-    const params = [];
     const wheres = [];
 
     const keywords = (value ?? "").trim().split(/\s+/).filter(Boolean);
+
+    const scoreParams = [];
+    const whereParams = [];
 
     let matchScoreSelect = "0 AS match_score";
     let joins = "";
 
     if (userId) {
       wheres.push("p.user_id = ?");
-      params.push(userId);
+      whereParams.push(userId);
     } else {
       if (keywords.length === 0) {
-        return { products: [], nextOffset: null, hasNext: false };
+        return { products: [], totalCount: 0, nextOffset: null, hasNext: false };
       }
 
       if (searchType === "tag") {
         const placeholders = keywords.map(() => "?").join(", ");
 
         joins += `
-        JOIN (
-          SELECT
-            pt.product_id,
-            COUNT(DISTINCT t.name) AS match_score
-          FROM product_tags pt
-          JOIN tags t ON t.id = pt.tag_id
-          WHERE t.name IN (${placeholders})
-          GROUP BY pt.product_id
-        ) tm ON tm.product_id = p.id
-      `;
+          JOIN (
+            SELECT
+              pt.product_id,
+              COUNT(DISTINCT t.name) AS match_score
+            FROM product_tags pt
+            JOIN tags t ON t.id = pt.tag_id
+            WHERE t.name IN (${placeholders})
+            GROUP BY pt.product_id
+          ) tm ON tm.product_id = p.id
+        `;
 
-        params.push(...keywords);
+        whereParams.push(...keywords);
         matchScoreSelect = "tm.match_score AS match_score";
       } else {
-        const titleWheres = [];
-        const scores = [];
+        const titleWhereParts = [];
+        const scoreParts = [];
 
         for (const kw of keywords) {
-          titleWheres.push("p.title LIKE ?");
-          params.push(`%${kw}%`);
+          scoreParts.push("CASE WHEN p.title LIKE ? THEN 1 ELSE 0 END");
+          scoreParams.push(`%${kw}%`);
 
-          scores.push("CASE WHEN p.title LIKE ? THEN 1 ELSE 0 END");
-          params.push(`%${kw}%`);
+          titleWhereParts.push("p.title LIKE ?");
+          whereParams.push(`%${kw}%`);
         }
 
-        wheres.push(...titleWheres);
-        matchScoreSelect = `(${scores.join(" + ")}) AS match_score`;
+        wheres.push(`(${titleWhereParts.join(" OR ")})`);
+        matchScoreSelect = `(${scoreParts.join(" + ")}) AS match_score`;
       }
     }
 
     wheres.push(QUERY.WITHOUT_DELETED_QUERY);
 
     let query = `
-    ${QUERY.SELECT_QUERY},
-    ${matchScoreSelect}
-    ${QUERY.FROM_QUERY}
-    ${joins}
-    WHERE ${wheres.join(" AND ")}
-  `;
+      ${QUERY.SELECT_QUERY},
+      ${matchScoreSelect}
+      ${QUERY.FROM_QUERY}
+      ${joins}
+      WHERE ${wheres.join(" AND ")}
+    `;
 
     if (orderby === "accuracy" && !userId) {
       query += ` ORDER BY match_score DESC, p.created_at DESC, p.id DESC`;
@@ -169,15 +171,28 @@ class ProductRepository {
     }
 
     query += ` ${QUERY.LIMIT_QUERY} OFFSET ?`;
-    params.push(Number(limit) + 1, Number(offset));
 
-    const rows = await execute(query, params);
+    const dataParams = [...scoreParams, ...whereParams, Number(limit) + 1, Number(offset)];
+
+    const rows = await execute(query, dataParams);
 
     const hasNext = rows.length > Number(limit);
     const products = hasNext ? rows.slice(0, Number(limit)) : rows;
 
+    const countQuery = `
+      SELECT COUNT(DISTINCT p.id) AS totalCount
+      ${QUERY.FROM_QUERY}
+      ${joins}
+      WHERE ${wheres.join(" AND ")}
+    `;
+
+    const countParams = [...whereParams];
+    const countRows = await execute(countQuery, countParams);
+    const totalCount = countRows?.[0]?.totalCount ?? 0;
+
     return {
       products,
+      totalCount,
       nextOffset: hasNext ? Number(offset) + Number(limit) : null,
       hasNext,
     };

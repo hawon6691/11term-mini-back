@@ -83,7 +83,8 @@ class ProductService {
       if (searchType && searchType !== "tag" && searchType !== "title")
         throw new CustomError("잘못된 검색 형식입니다.", 400);
 
-      if (searchType && !value) return { products: [], nextCursor: null };
+      if (searchType && !value)
+        return { products: [], totalCount: 0, nextOffset: null, hasNext: false };
 
       return await this.productRepository.findProducts(
         userId,
