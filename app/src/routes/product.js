@@ -20,6 +20,7 @@ const CategoryRepository = require("./../categories/category.repository");
 const ProductTagService = require("./../productTags/productTag.service");
 const ProductTagRepository = require("./../productTags/productTag.repository");
 
+const SearchService = require("./../search/search.service");
 const SearchRepository = require("./../search/search.repository");
 
 const LikedController = require("./../liked/liked.controller");
@@ -54,14 +55,13 @@ const productController = new ProductController(productService);
 const likedRepository = new LikedRepository();
 const likedService = new LikedService(likedRepository, productRepository);
 const likedController = new LikedController(likedService);
+router.post("/", authGuard(), createProductValidator, validate, productController.create);
 
 router.post(
-  "/",
+  "/images",
   authGuard(),
   upload.array("images", MAX_IMAGE_COUNT),
-  createProductValidator,
-  validate,
-  productController.create
+  productController.uploadProductImages
 );
 
 router.get("/trending", productController.findTrendingProducts);
@@ -72,5 +72,10 @@ router.get("/liked", authGuard(), likedController.getLikedProducts);
 
 router.get("/", productController.findProducts);
 router.get("/:id", productController.findProductById);
+
+router.patch("/:id", authGuard(), productController.editProduct);
+router.delete("/:id", authGuard(), productController.deleteProduct);
+
+router.patch("/status/:id", authGuard(), productController.editProductStatus);
 
 module.exports = router;

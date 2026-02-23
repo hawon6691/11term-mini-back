@@ -85,6 +85,20 @@ class AuthController {
       next(error);
     }
   };
+
+  resetPassword = async (req, res, next) => {
+    try {
+      const { email, password } = req.body;
+
+      await this.authService.resetPassword(email, password);
+
+      res.status(200).json({
+        message: "비밀번호가 성공적으로 변경되었습니다.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 module.exports = AuthController;
