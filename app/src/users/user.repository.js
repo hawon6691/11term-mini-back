@@ -1,31 +1,27 @@
 "use strict";
 
-const camelcaseKeys = require("camelcase-keys").default;
 const { execute } = require("./../config/db");
 
 class UserRepository {
   async findUserById(id) {
     const query = "SELECT * FROM users WHERE id = ?";
-    const rows = await execute(query, [id]);
-    const result = camelcaseKeys(rows, { deep: true });
+    const [rows] = await execute(query, [id]);
 
-    return result[0] || null;
+    return rows || null;
   }
 
   async findUserByEmail(email) {
     const query = "SELECT * FROM users WHERE email = ?";
-    const rows = await execute(query, [email]);
-    const result = camelcaseKeys(rows, { deep: true });
+    const [rows] = await execute(query, [email]);
 
-    return result[0] || null;
+    return rows || null;
   }
 
   async findUserByNickname(nickname) {
     const query = "SELECT * FROM users WHERE nickname = ?";
-    const rows = await execute(query, [nickname]);
-    const result = camelcaseKeys(rows, { deep: true });
+    const [rows] = await execute(query, [nickname]);
 
-    return result[0] || null;
+    return rows || null;
   }
 
   async create(userInfo) {

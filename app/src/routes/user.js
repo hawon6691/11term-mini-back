@@ -32,8 +32,8 @@ router.patch(
   validate,
   userController.updateSummary
 );
-router.post("/follow", authGuard(), followValidator, validate);
-router.delete("/follow", authGuard(), followValidator, validate);
+router.post("/follow", authGuard(), followValidator, validate, userController.followUser);
+router.delete("/follow", authGuard(), followValidator, validate, userController.unfollowUser);
 router.get("/:id", userController.getUserInfo);
 
 module.exports = router;
