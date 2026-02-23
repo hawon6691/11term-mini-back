@@ -2,6 +2,7 @@
 
 const { execute } = require("./../config/db");
 const { PRODUCT_STATUS, TRENDING_CONFIG } = require("./product.constants");
+const { normalizeSearchKeyword } = require("../utils/searchKeyword.util");
 
 const QUERY = {
   FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, i.image_url
@@ -95,8 +96,14 @@ class ProductRepository {
         WHERE t.name = ?`;
         params.push(value);
       } else {
-        query += ` WHERE p.title LIKE ?`;
-        params.push(`%${value}%`);
+        const normalizedValue = normalizeSearchKeyword(value);
+
+        if (!normalizedValue) {
+          query += ` WHERE 1 = 0`;
+        } else {
+          query += ` WHERE REPLACE(LOWER(p.title), ' ', '') LIKE ?`;
+          params.push(`%${normalizedValue}%`);
+        }
       }
     }
 
