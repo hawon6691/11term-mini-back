@@ -4,4 +4,6 @@ module.exports = {
 
   accessExpiresIn: process.env.ACCESS_EXPIRES,
   refreshExpiresIn: process.env.REFRESH_EXPIRES,
+
+  resetPasswordTokenExpires: 60 * 60 * 1000,
 };
