@@ -1,7 +1,10 @@
 "use strict";
 
 const express = require("express");
-const { signupValidator } = require("../validators/auth.validator");
+const {
+  signupValidator,
+  resetPasswordValidator,
+} = require("../validators/auth.validator");
 const validate = require("../middleware/validate");
 
 const AuthService = require("./../auth/auth.service");
@@ -20,5 +23,12 @@ router.post("/signup", signupValidator, validate, authController.signup);
 router.post("/login", authController.login);
 router.post("/logout", authGuard(), authController.logout);
 router.post("/refresh", authController.refresh);
+
+router.patch(
+  "/reset-password",
+  resetPasswordValidator,
+  validate,
+  authController.resetPassword
+);
 
 module.exports = router;

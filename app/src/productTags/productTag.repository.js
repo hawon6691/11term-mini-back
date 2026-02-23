@@ -20,6 +20,14 @@ class ProductTagRepository {
 
     return rows || [];
   }
+
+  async deleteProductTags(productId, connection) {
+    const query = "DELETE FROM product_tags WHERE product_id = ?;";
+
+    const rows = await connection.query(query, [productId]);
+
+    return rows || null;
+  }
 }
 
 module.exports = ProductTagRepository;

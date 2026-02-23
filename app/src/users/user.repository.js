@@ -1,31 +1,27 @@
 "use strict";
 
-const camelcaseKeys = require("camelcase-keys").default;
 const { execute } = require("./../config/db");
 
 class UserRepository {
   async findUserById(id) {
     const query = "SELECT * FROM users WHERE id = ?";
-    const rows = await execute(query, [id]);
-    const result = camelcaseKeys(rows, { deep: true });
+    const [rows] = await execute(query, [id]);
 
-    return result[0] || null;
+    return rows || null;
   }
 
   async findUserByEmail(email) {
     const query = "SELECT * FROM users WHERE email = ?";
-    const rows = await execute(query, [email]);
-    const result = camelcaseKeys(rows, { deep: true });
+    const [rows] = await execute(query, [email]);
 
-    return result[0] || null;
+    return rows || null;
   }
 
   async findUserByNickname(nickname) {
     const query = "SELECT * FROM users WHERE nickname = ?";
-    const rows = await execute(query, [nickname]);
-    const result = camelcaseKeys(rows, { deep: true });
+    const [rows] = await execute(query, [nickname]);
 
-    return result[0] || null;
+    return rows || null;
   }
 
   async create(userInfo) {
@@ -141,6 +137,50 @@ class UserRepository {
     const query = "UPDATE users SET image_url = NULL WHERE id = ?";
     const rows = await execute(query, [userId]);
     return rows.affectedRows > 0;
+  }
+  async updateResetToken(userId, token, expiresAt) {
+    const query = `
+      UPDATE users
+      SET reset_password_token = ?, reset_password_expires = ?
+      WHERE id = ?
+    `;
+    const rows = await execute(query, [token, expiresAt, userId]);
+    return rows.affectedRows > 0;
+  }
+
+  async findUserByResetToken(token) {
+    const query = `
+      SELECT * FROM users
+      WHERE reset_password_token = ?
+        AND reset_password_expires > NOW()
+    `;
+    const rows = await execute(query, [token]);
+    const result = camelcaseKeys(rows, { deep: true });
+    return result[0] || null;
+  }
+
+  async updatePasswordAndClearToken(userId, hashedPassword) {
+    const query = `
+      UPDATE users
+      SET password = ?,
+          reset_password_token = NULL,
+          reset_password_expires = NULL
+      WHERE id = ?
+    `;
+    const rows = await execute(query, [hashedPassword, userId]);
+    return rows.affectedRows > 0;
+  }
+
+  async updatePassword(userId, hashedPassword) {
+    const query = "UPDATE users SET password = ? WHERE id = ?";
+    const rows = await execute(query, [hashedPassword, userId]);
+    return rows.affectedRows > 0;
+  }
+
+  async removeAllRefreshTokensByUserId(userId) {
+    const query = "DELETE FROM refresh_token WHERE user_id = ?";
+    const rows = await execute(query, [userId]);
+    return rows.affectedRows >= 0;
   }
 }
 

@@ -154,6 +154,26 @@ class UserService {
 
     await this.userRepository.deleteFollow(followerId, targetId);
   }
+
+  async updateResetToken(userId, token, expiresAt) {
+    return await this.userRepository.updateResetToken(userId, token, expiresAt);
+  }
+
+  async findUserByResetToken(token) {
+    return await this.userRepository.findUserByResetToken(token);
+  }
+
+  async updatePasswordAndClearToken(userId, hashedPassword) {
+    return await this.userRepository.updatePasswordAndClearToken(userId, hashedPassword);
+  }
+
+  async updatePassword(userId, hashedPassword) {
+    return await this.userRepository.updatePassword(userId, hashedPassword);
+  }
+
+  async removeAllRefreshTokensByUserId(userId) {
+    return await this.userRepository.removeAllRefreshTokensByUserId(userId);
+  }
 }
 
 module.exports = UserService;

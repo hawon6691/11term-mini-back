@@ -74,6 +74,26 @@ class AuthService {
   async logout(token) {
     return await this.userService.removeRefreshToken(token);
   }
+
+  async resetPassword(email, newPassword) {
+    const user = await this.userService.findUserByEmail(email);
+
+    if (!user) {
+      throw new CustomError("해당 이메일로 가입된 계정을 찾을 수 없습니다.", 404);
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    const isUpdated = await this.userService.updatePassword(user.id, hashedPassword);
+
+    if (!isUpdated) {
+      throw new CustomError("비밀번호 변경에 실패했습니다.", 500);
+    }
+
+    await this.userService.removeAllRefreshTokensByUserId(user.id);
+
+    return true;
+  }
 }
 
 module.exports = AuthService;
