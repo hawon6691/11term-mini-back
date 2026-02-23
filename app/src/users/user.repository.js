@@ -127,6 +127,17 @@ class UserRepository {
     await execute(query, [followerId, followingId]);
   }
 
+  async updateImageUrl(userId, imageUrl) {
+    const query = "UPDATE users SET image_url = ? WHERE id = ?";
+    const rows = await execute(query, [imageUrl, userId]);
+    return rows.affectedRows > 0;
+  }
+
+  async clearImageUrl(userId) {
+    const query = "UPDATE users SET image_url = NULL WHERE id = ?";
+    const rows = await execute(query, [userId]);
+    return rows.affectedRows > 0;
+  }
   async updateResetToken(userId, token, expiresAt) {
     const query = `
       UPDATE users

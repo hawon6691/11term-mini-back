@@ -1,6 +1,8 @@
 "use strict";
 
 const CustomError = require("../utils/customError");
+const { deleteFile } = require("../utils/file.util");
+const path = require("path");
 
 class UserService {
   constructor(userRepository) {
@@ -76,6 +78,54 @@ class UserService {
 
   async updateSummary(userId, summary) {
     await this.userRepository.updateDescription(userId, summary);
+  }
+
+  async updateProfile(userId, { nickname, summary, imageFile, deleteImage }) {
+    if (nickname !== undefined) {
+      const existingUser = await this.userRepository.findUserByNickname(nickname);
+
+      if (existingUser && existingUser.id !== userId) {
+        throw new CustomError("이미 사용 중인 상점명입니다.", 409);
+      }
+
+      await this.userRepository.updateNickname(userId, nickname);
+    }
+
+    if (summary !== undefined) {
+      await this.userRepository.updateDescription(userId, summary);
+    }
+
+    if (deleteImage === true) {
+      const user = await this.userRepository.findUserById(userId);
+
+      if (!user.imageUrl) {
+        throw new CustomError("삭제할 프로필 이미지가 없습니다.", 400);
+      }
+
+      const filePath = user.imageUrl.startsWith("/")
+        ? user.imageUrl.substring(1)
+        : user.imageUrl;
+
+      deleteFile(filePath);
+
+      await this.userRepository.clearImageUrl(userId);
+    }
+
+    if (imageFile) {
+      const user = await this.userRepository.findUserById(userId);
+
+      if (user.imageUrl) {
+        const oldFilePath = user.imageUrl.startsWith("/")
+          ? user.imageUrl.substring(1)
+          : user.imageUrl;
+
+        deleteFile(oldFilePath);
+      }
+
+      const imageUrl = "/" + imageFile.path.replace(/\\/g, "/");
+
+      await this.userRepository.updateImageUrl(userId, imageUrl);
+    }
   }
 
   async followUser(followerId, targetId) {
