@@ -1,28 +1,23 @@
 "use strict";
 
 const multer = require("multer");
+const multerS3 = require("multer-s3");
 const path = require("path");
-const fs = require("fs");
 const { v4: uuid } = require("uuid");
-const { upload: profileUpload } = require("../config/multer");
-const { ensureDirectoryExists } = require("../utils/file.util");
+const s3 = require("./../config/s3");
 
-const IMAGE_PATH = path.join("src", "uploads", "products");
-const MAX_IMAGE_COUNT = 12;
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_IMAGE_COUNT = 12; // 12개 까지만 받음
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 이미지당 최대 5MB
+const S3_PRODUCTS = "products";
 
-if (!fs.existsSync(IMAGE_PATH)) {
-  fs.mkdirSync(IMAGE_PATH, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, IMAGE_PATH);
-  },
-  filename: (req, file, cb) => {
+const storage = multerS3({
+  s3: s3,
+  bucket: process.env.AWS_S3_BUCKET,
+  contentType: multerS3.AUTO_CONTENT_TYPE,
+  key: function (req, file, cb) {
     const ext = path.extname(file.originalname);
     const filename = `${Date.now()}_${uuid()}_${req.user.id}${ext}`;
-    cb(null, filename);
+    cb(null, path.join(S3_PRODUCTS, filename));
   },
 });
 
