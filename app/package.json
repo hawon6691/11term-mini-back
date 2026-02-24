@@ -10,11 +10,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-<<<<<<< HEAD
     "aws-sdk": "^2.1693.0",
-=======
     "@socket.io/redis-adapter": "^8.3.0",
->>>>>>> origin/develop
     "bcrypt": "^6.0.0",
     "body-parser": "^2.2.2",
     "camelcase-keys": "^10.0.1",
