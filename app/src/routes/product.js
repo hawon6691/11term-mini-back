@@ -23,6 +23,11 @@ const ProductTagRepository = require("./../productTags/productTag.repository");
 const SearchService = require("./../search/search.service");
 const SearchRepository = require("./../search/search.repository");
 
+const LikedController = require("./../liked/liked.controller");
+const LikedService = require("./../liked/liked.service");
+const LikedRepository = require("./../liked/liked.repository");
+const { likeProductValidator } = require("../validators/liked.validator");
+
 const router = express.Router();
 
 const tagRepository = new TagRepository();
@@ -47,6 +52,9 @@ const productService = new ProductService(
 );
 const productController = new ProductController(productService);
 
+const likedRepository = new LikedRepository();
+const likedService = new LikedService(likedRepository, productRepository);
+const likedController = new LikedController(likedService);
 router.post("/", authGuard(), createProductValidator, validate, productController.create);
 
 router.post(
@@ -57,6 +65,11 @@ router.post(
 );
 
 router.get("/trending", productController.findTrendingProducts);
+
+router.post("/liked", authGuard(), likeProductValidator, validate, likedController.likeProduct);
+router.delete("/liked", authGuard(), likeProductValidator, validate, likedController.unlikeProduct);
+router.get("/liked", authGuard(), likedController.getLikedProducts);
+
 router.get("/", productController.findProducts);
 router.get("/:id", productController.findProductById);
 
