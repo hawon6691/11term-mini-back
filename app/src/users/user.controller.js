@@ -48,6 +48,40 @@ class UserController {
     }
   };
 
+  updateProfile = async (req, res, next) => {
+    try {
+      const userId = req.user.id;
+      const { nickname, summary, deleteImage, imageUrl } = req.body;
+
+      const shouldDeleteImage = deleteImage === "true" || deleteImage === true;
+
+      await this.userService.updateProfile(userId, {
+        nickname,
+        summary,
+        imageUrl,
+        deleteImage: shouldDeleteImage,
+      });
+
+      return res.status(200).json({
+        message: "프로필이 수정되었습니다.",
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  updateProfileImage = async (req, res, next) => {
+    try {
+      const file = req.file ?? null;
+      const image = file.key;
+
+      res.status(200).json({ image });
+    } catch (error) {
+      console.error(error);
+      next(error);
+    }
+  };
+
   followUser = async (req, res, next) => {
     try {
       const { targetId } = req.body;

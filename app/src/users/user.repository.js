@@ -126,6 +126,62 @@ class UserRepository {
     `;
     await execute(query, [followerId, followingId]);
   }
+
+  async updateImageUrl(userId, imageUrl) {
+    const query = "UPDATE users SET image_url = ? WHERE id = ?";
+    const rows = await execute(query, [imageUrl, userId]);
+    return rows.affectedRows > 0;
+  }
+
+  async clearImageUrl(userId) {
+    const query = "UPDATE users SET image_url = NULL WHERE id = ?";
+    const rows = await execute(query, [userId]);
+    return rows.affectedRows > 0;
+  }
+  async updateResetToken(userId, token, expiresAt) {
+    const query = `
+      UPDATE users
+      SET reset_password_token = ?, reset_password_expires = ?
+      WHERE id = ?
+    `;
+    const rows = await execute(query, [token, expiresAt, userId]);
+    return rows.affectedRows > 0;
+  }
+
+  async findUserByResetToken(token) {
+    const query = `
+      SELECT * FROM users
+      WHERE reset_password_token = ?
+        AND reset_password_expires > NOW()
+    `;
+    const rows = await execute(query, [token]);
+    const result = camelcaseKeys(rows, { deep: true });
+    return result[0] || null;
+  }
+
+  async updatePasswordAndClearToken(userId, hashedPassword) {
+    const query = `
+      UPDATE users
+      SET password = ?,
+          reset_password_token = NULL,
+          reset_password_expires = NULL
+      WHERE id = ?
+    `;
+    const rows = await execute(query, [hashedPassword, userId]);
+    return rows.affectedRows > 0;
+  }
+
+  async updatePassword(userId, hashedPassword) {
+    const query = "UPDATE users SET password = ? WHERE id = ?";
+    const rows = await execute(query, [hashedPassword, userId]);
+    return rows.affectedRows > 0;
+  }
+
+  async removeAllRefreshTokensByUserId(userId) {
+    const query = "DELETE FROM refresh_token WHERE user_id = ?";
+    const rows = await execute(query, [userId]);
+    return rows.affectedRows >= 0;
+  }
 }
 
 module.exports = UserRepository;

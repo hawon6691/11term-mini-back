@@ -1,7 +1,6 @@
 "use strict";
 
 const CustomError = require("../utils/customError");
-const buildImagePath = require("../utils/file.util");
 
 class ProductController {
   constructor(productService) {
@@ -30,7 +29,7 @@ class ProductController {
     try {
       const files = req.files ?? [];
 
-      const images = files.map((file) => buildImagePath(file.filename));
+      const images = files.map((file) => file.key);
 
       res.status(200).json({ images });
     } catch (error) {

@@ -5,14 +5,17 @@ const { PRODUCT_STATUS, TRENDING_CONFIG } = require("./product.constants");
 const { normalizeSearchKeyword } = require("../utils/searchKeyword.util");
 
 const QUERY = {
-  FIND_ALL_PRODUCTS_QUERY: `SELECT p.id AS product_id, p.title, p.price, p.created_at, p.is_shipping_cost, p.sale_status, i.image_url
-    FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1`,
+  SELECT_QUERY:
+    "SELECT p.id AS product_id, p.title, p.price, p.created_at, p.is_shipping_cost, p.sale_status, i.image_url",
+  FROM_QUERY:
+    "FROM products p LEFT JOIN product_images i ON i.product_id = p.id AND i.is_thumbnail = 1",
   CURSOR_QUERY: "AND (p.created_at < ? OR (p.created_at = ? AND p.id < ?))",
   LIMIT_QUERY: "LIMIT ?",
   WITHOUT_DELETED_QUERY: "p.deleted_at IS NULL",
 };
 
 const ORDER_BY_QUERY = {
+  accuracy: "",
   popular: "ORDER BY p.view_cnt DESC, p.id DESC",
   latest: "ORDER BY p.created_at DESC, p.id DESC",
   price_desc: "ORDER BY p.price DESC, p.id DESC",
@@ -70,7 +73,7 @@ class ProductRepository {
 
   async findAllProducts(limit, cursor, cursorId, orderby) {
     const params = [];
-    let query = `${QUERY.FIND_ALL_PRODUCTS_QUERY} WHERE ${QUERY.WITHOUT_DELETED_QUERY}`;
+    let query = `${QUERY.SELECT_QUERY} ${QUERY.FROM_QUERY} WHERE ${QUERY.WITHOUT_DELETED_QUERY}`;
 
     if (cursor && cursorId) {
       query += ` ${QUERY.CURSOR_QUERY}`;
@@ -100,18 +103,41 @@ class ProductRepository {
   }
 
   async findProducts(userId, searchType, value, limit, offset, orderby) {
-    const params = [];
-    let query = QUERY.FIND_ALL_PRODUCTS_QUERY;
-
     const wheres = [];
+
+    const keywords = (value ?? "").trim().split(/\s+/).filter(Boolean);
+
+    const scoreParams = [];
+    const whereParams = [];
+
+    let matchScoreSelect = "0 AS match_score";
+    let joins = "";
+
     if (userId) {
       wheres.push("p.user_id = ?");
-      params.push(userId);
+      whereParams.push(userId);
     } else {
+      if (keywords.length === 0) {
+        return { products: [], totalCount: 0, nextOffset: null, hasNext: false };
+      }
+
       if (searchType === "tag") {
-        query += ` JOIN product_tags pt ON pt.product_id = p.id JOIN tags t ON t.id = pt.tag_id`;
-        wheres.push("t.name = ?");
-        params.push(value);
+        const placeholders = keywords.map(() => "?").join(", ");
+
+        joins += `
+          JOIN (
+            SELECT
+              pt.product_id,
+              COUNT(DISTINCT t.name) AS match_score
+            FROM product_tags pt
+            JOIN tags t ON t.id = pt.tag_id
+            WHERE t.name IN (${placeholders})
+            GROUP BY pt.product_id
+          ) tm ON tm.product_id = p.id
+        `;
+
+        whereParams.push(...keywords);
+        matchScoreSelect = "tm.match_score AS match_score";
       } else {
         const normalizedValue = normalizeSearchKeyword(value);
 
@@ -125,20 +151,44 @@ class ProductRepository {
     }
 
     wheres.push(QUERY.WITHOUT_DELETED_QUERY);
-    if (wheres.length > 0) {
-      query += ` WHERE ${wheres.join(" AND ")} `;
+
+    let query = `
+      ${QUERY.SELECT_QUERY},
+      ${matchScoreSelect}
+      ${QUERY.FROM_QUERY}
+      ${joins}
+      WHERE ${wheres.join(" AND ")}
+    `;
+
+    if (orderby === "accuracy" && !userId) {
+      query += ` ORDER BY match_score DESC, p.created_at DESC, p.id DESC`;
+    } else {
+      query += ` ${ORDER_BY_QUERY[orderby] || ORDER_BY_QUERY.latest}`;
     }
 
-    query += ` ${ORDER_BY_QUERY[orderby]} ${QUERY.LIMIT_QUERY} OFFSET ?`;
-    params.push(limit + 1, offset);
+    query += ` ${QUERY.LIMIT_QUERY} OFFSET ?`;
 
-    const rows = await execute(query, params);
+    const dataParams = [...scoreParams, ...whereParams, Number(limit) + 1, Number(offset)];
+
+    const rows = await execute(query, dataParams);
 
     const hasNext = rows.length > Number(limit);
     const products = hasNext ? rows.slice(0, Number(limit)) : rows;
 
+    const countQuery = `
+      SELECT COUNT(DISTINCT p.id) AS totalCount
+      ${QUERY.FROM_QUERY}
+      ${joins}
+      WHERE ${wheres.join(" AND ")}
+    `;
+
+    const countParams = [...whereParams];
+    const countRows = await execute(countQuery, countParams);
+    const totalCount = countRows?.[0]?.totalCount ?? 0;
+
     return {
       products,
+      totalCount,
       nextOffset: hasNext ? Number(offset) + Number(limit) : null,
       hasNext,
     };

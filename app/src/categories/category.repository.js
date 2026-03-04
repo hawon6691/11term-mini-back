@@ -3,7 +3,7 @@
 const { execute } = require("./../config/db");
 
 class CategoryRepository {
-  async findAllCategories() {
+  async findCategories() {
     const query = "SELECT * FROM categories";
 
     const rows = await execute(query);

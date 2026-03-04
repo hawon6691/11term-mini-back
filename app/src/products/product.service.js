@@ -17,7 +17,7 @@ const PRODUCT_COLUMNS = [
   "tags",
   "images",
 ];
-const SORT_TYPE = ["popular", "latest", "price_asc", "price_desc"];
+const SORT_TYPE = ["accuracy", "popular", "latest", "price_asc", "price_desc"];
 
 class ProductService {
   constructor(productRepository, tagService, productTagService, categoryService, searchService) {
@@ -39,7 +39,7 @@ class ProductService {
       const productId = newProduct.insertId;
 
       if (images.length > 0) {
-        await validateImagesExist(images);
+        await validateImagesExist(images, "product");
 
         const result = await this.productRepository.saveProductImage(productId, images, connection);
 
@@ -82,6 +82,9 @@ class ProductService {
     if (userId || searchType) {
       if (searchType && searchType !== "tag" && searchType !== "title")
         throw new CustomError("잘못된 검색 형식입니다.", 400);
+
+      if (searchType && !value)
+        return { products: [], totalCount: 0, nextOffset: null, hasNext: false };
 
       return await this.productRepository.findProducts(
         userId,
@@ -190,6 +193,8 @@ class ProductService {
       }
 
       if (images !== undefined) {
+        await validateImagesExist(images, "product");
+
         await this.productRepository.deleteProductImage(productId, connection);
 
         const saveImageResult = await this.productRepository.saveProductImage(
