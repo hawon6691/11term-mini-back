@@ -4,7 +4,7 @@ const express = require("express");
 
 const { createProductValidator } = require("../validators/product.validator");
 const validate = require("../middleware/validate");
-const { upload, MAX_IMAGE_COUNT } = require("../middleware/upload.middleware");
+const { uploadProductImage, MAX_IMAGE_COUNT } = require("../middleware/upload.middleware");
 const authGuard = require("./../auth/guard/auth.guard");
 
 const ProductController = require("./../products/product.controller");
@@ -52,7 +52,7 @@ router.post("/", authGuard(), createProductValidator, validate, productControlle
 router.post(
   "/images",
   authGuard(),
-  upload.array("images", MAX_IMAGE_COUNT),
+  uploadProductImage.array("images", MAX_IMAGE_COUNT),
   productController.uploadProductImages
 );
 
